@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Grana">
+<meta name="theme-color" content="#0A0A0C">
+<title>Grana</title>
+<style>
+  html,body{margin:0;height:100%;background:#0A0A0C;color:#ECEDF0;
+    font:400 15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:16px}
+  .mk{width:60px;height:60px;border-radius:19px;
+    background:linear-gradient(145deg,#8B6BFF,#6D45FF);display:grid;place-items:center;font-size:28px;
+    animation:pulsa 1.4s ease-in-out infinite}
+  @keyframes pulsa{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.94);opacity:.75}}
+  #erro{display:none;max-width:320px;text-align:center;color:#8B909C;font-size:.88rem;padding:0 24px}
+  #erro button{margin-top:14px;height:44px;padding:0 22px;border:none;border-radius:12px;
+    background:#7C5CFF;color:#fff;font:600 .9rem system-ui;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="splash">
+  <div class="mk">&#128176;</div>
+  <div id="erro"><span id="msg"></span><br><button onclick="location.reload()">Tentar de novo</button></div>
+</div>
+<script>
+(async () => {
+  const FONTE = "https://pgtptplkpiuoiwbtxfhp.supabase.co/functions/v1/app";
+  try {
+    const r = await fetch(FONTE + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const html = await r.text();
+    if (html.length < 500) throw new Error("conteúdo vazio");
+    document.open();
+    document.write(html);
+    document.close();
+  } catch (e) {
+    document.getElementById("erro").style.display = "block";
+    document.getElementById("msg").textContent = "Não consegui carregar o app (" + e.message + ").";
+  }
+})();
+</script>
+</body>
+</html>
