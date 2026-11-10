@@ -3,6 +3,22 @@ import {MESES, S, preparados} from "./estado.js";
 import {$, esc, brl, comp, mesCorrente, hojeISO, num, toast, erro, sheet, fechar} from "./util.js";
 import {carregar} from "./nav.js";
 
+/* ---------------- seções recolhíveis ---------------- */
+const secaoAberta=id=>S.secoes[id]!==false;
+function secao(id,tituloHTML,corpoHTML){
+  return '<details class="secao" data-sec="'+id+'"'+(secaoAberta(id)?" open":"")+'>'+
+    '<summary class="h2">'+tituloHTML+
+    '<svg class="caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>'+
+    corpoHTML+'</details>';
+}
+function subsecao(id,labelHTML,totalHTML,corpoHTML){
+  return '<details class="subsecao" data-sec="'+id+'"'+(secaoAberta(id)?" open":"")+'>'+
+    '<summary class="grupo"><span>'+labelHTML+'</span>'+
+    '<span style="display:flex;align-items:center;gap:5px">'+totalHTML+
+    '<svg class="car" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></summary>'+
+    corpoHTML+'</details>';
+}
+
 /* ---------------- tela: mês ---------------- */
 export async function telaMes(){
   const c=comp(), alvo=$("#t-mes");
@@ -61,33 +77,36 @@ export async function telaMes(){
   const fs=(fa.data||[]).filter(x=>Math.abs(x.valor)>0.004);
   if(fs.length){
     const tf=fs.reduce((s,x)=>s+ +x.valor,0);
-    h+='<h2>Faturas · '+brl(tf)+'</h2><div class="lista">'+fs.map(f=>
+    h+=secao("faturas","Faturas · "+brl(tf),
+      '<div class="lista">'+fs.map(f=>
       '<button class="item" data-fat="'+f.conta_id+'" data-nome="'+esc(f.conta)+'" data-v="'+f.valor+
       '" data-pg="'+(f.pago?1:0)+'"><span class="dot" style="background:'+(f.pago?"var(--ok)":"var(--wr)")+
       '"></span><span class="ct"><span class="nm">'+esc(f.conta)+'</span><span class="mt">'+
       (f.pago?"paga":"em aberto")+'</span></span><span class="vl">'+brl(f.valor)+
-      '</span></button>').join("")+'</div>';
+      '</span></button>').join("")+'</div>');
   }
 
   {
     const ens=en.data||[], te=ens.reduce((s,x)=>s+ +x.valor,0);
-    h+='<h2>Entradas'+(te?' · '+brl(te):'')+'</h2><div class="lista">'+ens.map(e=>
+    h+=secao("entradas","Entradas"+(te?' · '+brl(te):''),
+      '<div class="lista">'+ens.map(e=>
       '<button class="item" data-ent="'+e.id+'">'+
       '<span class="dot" style="background:'+(e.recebido?"var(--ok)":"var(--mu)")+'"></span>'+
       '<span class="ct"><span class="nm">'+esc(e.descricao)+'</span><span class="mt">'+
       (e.recebido?"recebida":"a receber")+(e.recorrente?" · repete todo mês":"")+
       '</span></span><span class="vl ok">'+brl(e.valor)+'</span></button>').join("")+
       '<button class="item" id="novaEnt"><span class="dot" style="background:var(--ac)"></span>'+
-      '<span class="ct"><span class="nm" style="color:#b9a6ff">+ nova entrada</span></span></button></div>';
+      '<span class="ct"><span class="nm" style="color:#b9a6ff">+ nova entrada</span></span></button></div>');
   }
 
   if(ar.data?.length){
-    h+='<h2>A receber</h2><div class="rolo">'+ar.data.map(p=>{
+    h+=secao("areceber","A receber",
+      '<div class="rolo">'+ar.data.map(p=>{
       const pend=Number(p.pendente)||0;
       return '<button class="pcard" data-pes="'+p.pessoa_id+'" data-nome="'+esc(p.pessoa)+'">'+
         '<small>'+esc(p.pessoa)+'</small><b>'+brl(p.total)+'</b>'+
         '<span class="tag '+(pend>0?"pend":"quit")+'">'+(pend>0?brl(pend)+" pendente":"recebido")+
-        '</span></button>';}).join("")+'</div>';
+        '</span></button>';}).join("")+'</div>');
   }
 
   h+='<h2>Lançamentos</h2><div class="busca">'+
@@ -98,13 +117,14 @@ export async function telaMes(){
     const g=lanc.filter(x=>x.origem===k);
     if(!g.length) return;
     const s=g.reduce((a,x)=>a+Number(x.valor),0);
-    h+='<div class="grupo"><span>'+rot+' <i>'+g.length+'</i></span><b>'+brl(s)+'</b></div>'+
-       '<div class="lista">'+g.map(linha).join("")+'</div>';
+    h+=subsecao("lanc-"+k,rot+' <i>'+g.length+'</i>','<b>'+brl(s)+'</b>',
+      '<div class="lista">'+g.map(linha).join("")+'</div>');
   });
 
   if(gc.data?.length){
     const mx=Math.max(...gc.data.map(x=>Math.abs(x.valor_bruto)))||1;
-    h+='<h2>Por categoria</h2><div class="mu" style="font-size:.76rem;margin:-4px 0 8px">'+
+    h+=secao("categoria","Por categoria",
+      '<div class="mu" style="font-size:.76rem;margin:-4px 0 8px">'+
        'Toque numa categoria para definir o limite do mês.</div><div class="lista">'+gc.data.map(x=>{
       const orc=Number(x.valor_esperado)||0, pct=orc?Math.round(x.valor_bruto/orc*100):null;
       const cls=pct===null?"":pct>100?"er":pct>80?"wr":"ok";
@@ -114,20 +134,23 @@ export async function telaMes(){
         '<span class="mu">'+brl(x.valor_bruto)+(orc?' <small>de '+brl(orc)+'</small>':'')+'</span></div>'+
         '<div class="barra"><i class="'+cls+'" style="width:'+larg+'%'+
         (orc?'':';background:'+(x.cor_fundo||"var(--ac)"))+'"></i></div></button>';
-    }).join("")+'</div>';
+    }).join("")+'</div>');
   }
 
   if((pe.data||[]).length){
-    h+='<h2>Pendências · '+pe.data.length+'</h2><div class="lista">'+pe.data.map(x=>
+    h+=secao("pendencias","Pendências · "+pe.data.length,
+      '<div class="lista">'+pe.data.map(x=>
       '<button class="item" data-corr="'+x.id+'"><span class="dot" style="background:var(--wr)"></span>'+
       '<span class="ct"><span class="nm">'+esc(x.descricao)+'</span><span class="mt">'+
       esc([MESES[+x.competencia.slice(5,7)-1].slice(0,3)+"/"+x.competencia.slice(2,4),
            x.categoria_nome?null:"sem categoria", x.conta_nome?null:"sem forma de pagamento"]
           .filter(Boolean).join(" · "))+'</span></span><span class="vl">'+brl(x.valor)+
-      '</span></button>').join("")+'</div>';
+      '</span></button>').join("")+'</div>');
   }
   h+='<div style="height:30px"></div>';
   alvo.innerHTML=h;
+  alvo.querySelectorAll("details[data-sec]").forEach(d=>
+    d.addEventListener("toggle",()=>{ S.secoes[d.dataset.sec]=d.open; }));
 
   const acha=id=>lanc.find(x=>x.id===id)||(pe.data||[]).find(x=>x.id===id);
   alvo.querySelectorAll("[data-lq]").forEach(b=>b.onclick=()=>{S.liquido=b.dataset.lq==="1";telaMes();});
@@ -249,8 +272,16 @@ export function sheetNovoLancamento(){
       extra.innerHTML='<div class="linha2"><label class="campo"><span>Vence no dia</span>'+
         '<input class="inp" type="number" min="1" max="31" id="nVenc" placeholder="—"></label>'+
         '<label class="campo"><span>Até quando (opcional)</span><input class="inp" type="month" id="nFim"></label></div>'+
+        '<label class="sw">Tem prazo definido (parcelas)<input type="checkbox" id="nTemPrazo"></label>'+
+        '<div id="nParcBox" class="hide"><div class="linha2">'+
+          '<label class="campo"><span>Parcela atual (em '+MESES[S.mes]+"/"+S.ano+')</span>'+
+          '<input class="inp" type="number" min="1" id="nParcAtual" value="1"></label>'+
+          '<label class="campo"><span>Total de parcelas</span><input class="inp" type="number" min="1" id="nParcTotal"></label>'+
+        '</div></div>'+
         '<div class="mu" style="font-size:.76rem;margin:4px 0 0">Lançada automaticamente todo mês a partir de '+
-        MESES[S.mes]+" de "+S.ano+', até ser desativada ou até o mês final.</div>';
+        MESES[S.mes]+" de "+S.ano+', até ser desativada, até o mês final ou até acabar as parcelas.</div>';
+      extra.querySelector("#nTemPrazo").onchange=ev=>
+        extra.querySelector("#nParcBox").classList.toggle("hide",!ev.target.checked);
     } else extra.innerHTML="";
   }
   pintaExtra();
@@ -297,6 +328,14 @@ export function sheetNovoLancamento(){
     });
     if(invalido) return toast("Preencha o valor da divisão de cada pessoa.","e");
 
+    let parcAtualFixo=null, parcTotalFixo=null;
+    if(modo==="fixo" && bg.querySelector("#nTemPrazo").checked){
+      parcAtualFixo=parseInt(bg.querySelector("#nParcAtual").value,10);
+      parcTotalFixo=parseInt(bg.querySelector("#nParcTotal").value,10);
+      if(!parcAtualFixo||!parcTotalFixo||parcAtualFixo>parcTotalFixo)
+        return toast("Informe a parcela atual e o total de parcelas corretamente.","e");
+    }
+
     btn.disabled=true; btn.textContent="Lançando…";
     try{
       if(modo==="fixo"){
@@ -304,7 +343,9 @@ export function sheetNovoLancamento(){
         const fimStr=bg.querySelector("#nFim").value;
         const {data:rec,error}=await sb.from("recorrencia").insert({
           nome:desc,valor_padrao:valor,categoria_id:catId,conta_id:contaId,
-          dia_vencimento:venc,mes_inicio:comp(),mes_fim:fimStr?fimStr+"-01":null
+          dia_vencimento:venc,mes_inicio:comp(),mes_fim:fimStr?fimStr+"-01":null,
+          parcelas_total:parcTotalFixo,parcela_referencia:parcAtualFixo,
+          competencia_referencia:parcAtualFixo?comp():null
         }).select().single();
         if(error) throw error;
         if(rateios.length){
@@ -508,15 +549,86 @@ function sheetItem(x){
     '<div class="mu" style="margin:-8px 0 16px;font-size:.86rem">'+brl(x.valor)+
       (meta?" · "+esc(meta):"")+'</div>'+
     (x.origem==="fixo"?'<label class="sw">Pago neste mês<input type="checkbox" id="iPago"'+
-      (x.pago?" checked":"")+"></label>":"")+
+      (x.pago?" checked":"")+"></label>"+
+      '<button class="btn sec" id="iRec">Editar conta fixa (prazo e parcelas)</button><div style="height:10px"></div>':"")+
     '<button class="btn sec" id="iEd">Editar</button><div style="height:10px"></div>'+
     '<button class="btn per" id="iEx">Excluir</button>');
   bg.querySelector("#iPago")?.addEventListener("change",async e=>{
     const {error}=await sb.from("lancamento").update({pago:e.target.checked,
       data_pagamento:e.target.checked?hojeISO():null}).eq("id",x.id);
     error?erro(error):toast(e.target.checked?"Marcado como pago.":"Marcado como a pagar.");});
+  const bRec=bg.querySelector("#iRec");
+  if(bRec) bRec.onclick=()=>sheetEditarFixo(x);
   bg.querySelector("#iEd").onclick=()=>formEventos(sheet("Editar",formHTML(x)),x);
   bg.querySelector("#iEx").onclick=()=>confirmarExclusao(x);
 }
+
+/* ---------------- editar conta fixa (prazo e parcelas) ---------------- */
+async function sheetEditarFixo(x){
+  const {data:rec,error}=await sb.from("recorrencia").select("*").eq("id",x.recorrencia_id).single();
+  if(error) return erro(error);
+  const C=S.cad;
+  const temPrazo=rec.parcelas_total!=null;
+  const mesRef=MESES[+x.competencia.slice(5,7)-1]+"/"+x.competencia.slice(2,4);
+  const bg=sheet("Editar conta fixa",
+    '<label class="campo"><span>Nome</span><input class="inp" id="rNome" value="'+esc(rec.nome||"")+'"></label>'+
+    '<div class="linha2"><label class="campo"><span>Valor</span><input class="inp" id="rValor" inputmode="decimal" value="'+
+      Number(rec.valor_padrao||0).toFixed(2).replace(".",",")+'"></label>'+
+    '<label class="campo"><span>Vence no dia</span><input class="inp" type="number" min="1" max="31" id="rVenc" placeholder="—" value="'+
+      (rec.dia_vencimento||"")+'"></label></div>'+
+    '<div class="linha2"><label class="campo"><span>Categoria</span><select class="inp" id="rCat"><option value="">—</option>'+
+      C.todasCat.map(c=>'<option value="'+c.id+'"'+(c.id===rec.categoria_id?" selected":"")+'>'+esc(c.nome)+'</option>').join("")+
+      '</select></label>'+
+    '<label class="campo"><span>Forma de pagamento</span><select class="inp" id="rConta"><option value="">—</option>'+
+      C.todasContas.map(c=>'<option value="'+c.id+'"'+(c.id===rec.conta_id?" selected":"")+'>'+esc(c.nome)+'</option>').join("")+
+      '</select></label></div>'+
+    '<label class="campo"><span>Até quando (opcional)</span><input class="inp" type="month" id="rFim" value="'+
+      (rec.mes_fim?rec.mes_fim.slice(0,7):"")+'"></label>'+
+    '<label class="sw">Tem prazo definido (parcelas)<input type="checkbox" id="rTemPrazo"'+(temPrazo?" checked":"")+'></label>'+
+    '<div id="rParcBox" class="'+(temPrazo?"":"hide")+'"><div class="linha2">'+
+      '<label class="campo"><span>Parcela atual (em '+mesRef+')</span>'+
+      '<input class="inp" type="number" min="1" id="rParcAtual" value="'+(x.parcela_num||"")+'"></label>'+
+      '<label class="campo"><span>Total de parcelas</span><input class="inp" type="number" min="1" id="rParcTotal" value="'+
+      (rec.parcelas_total||"")+'"></label></div>'+
+      '<div class="mu" style="font-size:.76rem;margin:4px 0 0">Os meses já lançados dessa conta são '+
+      'atualizados automaticamente com o número de parcela correspondente.</div></div>'+
+    '<label class="sw">Conta ativa<input type="checkbox" id="rAtivo"'+(rec.ativo?" checked":"")+'></label>'+
+    '<div style="height:14px"></div><button class="btn" id="rOk">Salvar</button>');
+
+  bg.querySelector("#rTemPrazo").onchange=ev=>
+    bg.querySelector("#rParcBox").classList.toggle("hide",!ev.target.checked);
+
+  bg.querySelector("#rOk").onclick=async e=>{
+    const btn=e.currentTarget;
+    const nome=bg.querySelector("#rNome").value.trim();
+    if(!nome) return toast("Informe o nome.","e");
+    const valor=num(bg.querySelector("#rValor").value);
+    if(isNaN(valor)||valor<=0) return toast("Informe um valor válido.","e");
+    const temPrazoAgora=bg.querySelector("#rTemPrazo").checked;
+    let parcAtual=null, parcTotal=null;
+    if(temPrazoAgora){
+      parcAtual=parseInt(bg.querySelector("#rParcAtual").value,10);
+      parcTotal=parseInt(bg.querySelector("#rParcTotal").value,10);
+      if(!parcAtual||!parcTotal||parcAtual>parcTotal)
+        return toast("Informe a parcela atual e o total de parcelas corretamente.","e");
+    }
+    btn.disabled=true; btn.textContent="Salvando…";
+    const {data,error:e2}=await sb.rpc("definir_recorrencia",{p:{
+      id:rec.id,nome,valor_padrao:valor,
+      categoria_id:bg.querySelector("#rCat").value||null,
+      conta_id:bg.querySelector("#rConta").value||null,
+      dia_vencimento:bg.querySelector("#rVenc").value||null,
+      mes_fim:bg.querySelector("#rFim").value?bg.querySelector("#rFim").value+"-01":null,
+      parcelas_total:temPrazoAgora?parcTotal:null,
+      parcela_referencia:temPrazoAgora?parcAtual:null,
+      competencia_referencia:temPrazoAgora?x.competencia:null,
+      ativo:bg.querySelector("#rAtivo").checked
+    }});
+    btn.disabled=false; btn.textContent="Salvar";
+    if(e2) return erro(e2);
+    fechar(); toast("Salvo. "+(data?.atualizados||0)+" lançamento(s) atualizado(s)."); carregar();
+  };
+}
+
 async function excluir(p){ const {error}=await p; if(error)return erro(error);
   fechar(); toast("Excluído."); carregar(); }

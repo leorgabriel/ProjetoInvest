@@ -12,8 +12,13 @@ body{padding-bottom:var(--nav)}
 .wrap{max-width:540px;margin:0 auto;padding:0 16px}
 button,input,select{font:inherit;color:inherit}
 button{border:none;background:none;cursor:pointer}
-h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);
+h2,.h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);
    font-weight:600;margin:26px 0 10px}
+summary.h2{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none}
+summary.h2::-webkit-details-marker{display:none}
+summary.h2 .caret{width:13px;height:13px;stroke:var(--mu);fill:none;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .15s;flex:0 0 auto;margin-left:8px}
+details[open]>summary.h2 .caret{transform:rotate(180deg)}
 .mu{color:var(--mu)} .ok{color:var(--ok)} .er{color:var(--er)} .wr{color:var(--wr)}
 .hide{display:none!important}
 
@@ -119,6 +124,11 @@ header{position:sticky;top:0;z-index:30;background:rgba(10,10,12,.86);
 .grupo{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
   margin:18px 2px 8px;font-size:.85rem;font-weight:600}
 .grupo i{font-style:normal;color:var(--mu);font-weight:500;font-size:.78rem}
+summary.grupo{list-style:none;cursor:pointer}
+summary.grupo::-webkit-details-marker{display:none}
+summary.grupo .car{width:12px;height:12px;stroke:var(--mu);fill:none;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .15s;flex:0 0 auto}
+details[open]>summary.grupo .car{transform:rotate(180deg)}
 .busca{display:flex;gap:8px;margin-bottom:10px}
 .busca .inp{height:44px}
 .tg{flex:0 0 auto;height:44px;padding:0 14px;border-radius:14px;background:var(--s1);

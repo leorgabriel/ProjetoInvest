@@ -27,3 +27,8 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
 24_investimento_datas             2026-11-10  investimento: data_abertura, atualizado_em, desativado_em
 25_view_investimento_datas        2026-11-10  v_investimento expõe as novas datas
 26_investimento_taxa_rendimento   2026-11-10  investimento: taxa_rendimento_aa (% a.a., p/ projeção)
+27_recorrencia_parcelas           2026-11-10  conta fixa com prazo opcional (parcelas); preparar_mes
+                                               passa a respeitar o fim; definir_recorrencia() edita e
+                                               recalcula parcela_num dos lançamentos já gerados
+28_corrige_parcela_coerente        2026-11-10  a constraint parcela_coerente só previa parcela_num com
+                                               compra_id; agora também aceita com recorrencia_id
