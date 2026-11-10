@@ -64,3 +64,15 @@ db/               notas sobre o esquema
 
 As migrações ficam versionadas no próprio Supabase e estão listadas em `db/migracoes.txt`.
 O backup diário é gerado pela função `exportar_dados()` e gravado em `backup/`.
+
+## Backup
+
+- `fazer_backup()` grava um snapshot JSON completo (`exportar_dados()`) na tabela
+  `backup_diario`, que mantem os ultimos 30 dias. Agendado por `pg_cron` todos os
+  dias as 06:10 UTC (03:10 em Brasilia).
+- A tabela tem RLS ligado sem policies e `execute` revogado de `anon`/`authenticated`,
+  ou seja: nao e acessivel pelo app, apenas pelo service role.
+- Restaurar uma versao do HTML: `select restaurar_app(<id>)` (tabela `app_html_versao`,
+  ultimas 30 versoes).
+- **Atencao:** este repositorio e publico (necessario para o GitHub Pages), portanto
+  nenhum export de dados deve ser commitado aqui.

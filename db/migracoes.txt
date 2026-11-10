@@ -21,3 +21,4 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
 20261110013118  18_replicador_de_meses            parcelas, fixos e entradas
 20261110022216  19_orcamento_rateio_comprometido  orçamento e quitação em lote
 20261110022728  20_versionamento_e_backup         histórico do app, exportação
+21_backup_diario                 2026-11-09  pg_cron diario 06:10 UTC: tabela backup_diario + fazer_backup() (retem 30 dias)
