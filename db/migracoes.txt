@@ -1,2 +1,23 @@
-Migrações aplicadas no projeto Supabase (pgtptplkpiuoiwbtxfhp), em ordem.
-O SQL de cada uma fica registrado no painel do Supabase, em Database > Migrations.
+Migrações aplicadas no projeto Supabase, em ordem.
+O SQL de cada uma está registrado no painel, em Database > Migrations.
+
+20261109164523  01_schema_core                    tabelas, enums, auditoria
+20261109164543  02_investimentos                  patrimônio, separado do saldo
+20261109164620  03_views_e_funcoes                relatórios e funções de apoio
+20261109164645  04_rls                            Row Level Security em tudo
+20261109164947  05_seed_cadastros                 categorias, contas e pessoas
+20261109164955  06_staging_importacao             área de recepção da planilha
+20261109165657  07_normalizar_importacao          planilha -> modelo relacional
+20261109165739  08_corrige_entradas_normalizacao
+20261109165819  09_endurece_funcoes               search_path fixo, grants
+20261109170544  10_normalizacao_series_parcelas   séries de parcelas homônimas
+20261109170826  11_permite_valores_negativos      descontos e estornos
+20261109171102  12_fecha_importacao               encerra o canal de importação
+20261109172041  13_app_rpc_e_hospedagem           novo_lancamento()
+20261109175024  14_trava_cadastro
+20261109182521  15_parcelas_total_na_view
+20261110002315  16_convites_e_rateio_por_valor    convites; rateio em % ou R$
+20261110003157  17_semear_categorias              conta nova herda categorias
+20261110013118  18_replicador_de_meses            parcelas, fixos e entradas
+20261110022216  19_orcamento_rateio_comprometido  orçamento e quitação em lote
+20261110022728  20_versionamento_e_backup         histórico do app, exportação
