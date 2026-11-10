@@ -55,10 +55,27 @@ pessoa num gasto dividido, em percentual ou em valor.
 ## Estrutura
 
 ```
-index.html        aplicação completa
-backup/           exportações diárias do banco, em JSON
-db/               notas sobre o esquema
+index.html            shell: head, HTML das telas, <script type="module" src="js/app.js">
+css/estilo.css         todo o CSS
+js/estado.js           estado global (S) e constantes (MESES, preparados)
+js/supabase-client.js  criação do client do Supabase
+js/util.js             helpers ($, esc, brl, num, toast, sheet/fechar…)
+js/auth.js             login, criação de conta, sessão
+js/nav.js              navegação entre telas, botão "+"
+js/mes.js              tela do mês e seus formulários (lançamento, fatura, orçamento…)
+js/ano.js              tela do ano
+js/guardado.js         tela de investimentos
+js/cadastros.js        categorias, contas, pessoas e convites
+js/puxar.js            puxar para atualizar
+manifest.webmanifest   manifesto do PWA
+icons/                 ícone do app
+backup/                exportações diárias do banco, em JSON
+db/                    notas sobre o esquema
 ```
+
+Como é tudo estático (sem build), basta abrir `index.html` servido por HTTP — os módulos JS
+usam `import`, que o navegador bloqueia em `file://`. Para testar localmente, sirva a pasta
+com qualquer servidor estático (ex.: a extensão "Live Server" do VS Code, ou `npx serve`).
 
 ## Banco
 

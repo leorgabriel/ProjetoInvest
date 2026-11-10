@@ -24,3 +24,6 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
 21_backup_diario                 2026-11-09  pg_cron diario 06:10 UTC: tabela backup_diario + fazer_backup() (retem 30 dias)
 22_config_app                    2026-11-10  tabela config_app (RLS fechado) com o token do backup
 23_pg_net                        2026-11-10  extensao pg_net
+24_investimento_datas             2026-11-10  investimento: data_abertura, atualizado_em, desativado_em
+25_view_investimento_datas        2026-11-10  v_investimento expõe as novas datas
+26_investimento_taxa_rendimento   2026-11-10  investimento: taxa_rendimento_aa (% a.a., p/ projeção)
