@@ -76,3 +76,11 @@ O backup diário é gerado pela função `exportar_dados()` e gravado em `backup
   ultimas 30 versoes).
 - **Atencao:** este repositorio e publico (necessario para o GitHub Pages), portanto
   nenhum export de dados deve ser commitado aqui.
+
+### Copia off-site
+
+O repositorio privado [ProjetoInvest-backup](https://github.com/leorgabriel/ProjetoInvest-backup)
+guarda os ultimos 60 dias em JSON. Um GitHub Actions roda todo dia as 03:10, chama a
+Edge Function `backup` (que exige o token da tabela `config_app` no header
+`x-backup-token`) e commita o arquivo. O token nunca aparece em codigo: fica no
+secret `BACKUP_TOKEN` daquele repositorio e no banco.
