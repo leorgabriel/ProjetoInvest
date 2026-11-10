@@ -1,0 +1,2 @@
+Migrações aplicadas no projeto Supabase (pgtptplkpiuoiwbtxfhp), em ordem.
+O SQL de cada uma fica registrado no painel do Supabase, em Database > Migrations.
