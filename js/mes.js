@@ -356,7 +356,7 @@ export function sheetNovoLancamento(){
         }
         await sb.rpc("preparar_mes",{p_competencia:comp()});
       } else {
-        const {error}=await sb.rpc("novo_lancamento",{p:{
+        const {data,error}=await sb.rpc("novo_lancamento",{p:{
           modo,competencia:comp(),descricao:desc,valor,
           data:bg.querySelector("#nData").value||null,
           categoria_id:catId,conta_id:contaId,
@@ -366,6 +366,11 @@ export function sheetNovoLancamento(){
           rateios
         }});
         if(error) throw error;
+        if(data?.competencia && data.competencia!==comp()){
+          const i=+data.competencia.slice(5,7)-1;
+          fechar(); toast("Lançado na fatura de "+MESES[i]+"/"+data.competencia.slice(2,4)+"."); carregar();
+          return;
+        }
       }
       fechar(); toast("Lançado."); carregar();
     }catch(err){
@@ -399,15 +404,26 @@ function formEventos(bg,x){
     const valor=num(bg.querySelector("#fValor").value);
     if(!desc) return toast("Informe a descrição.","e");
     if(isNaN(valor)||valor===0) return toast("Informe um valor.","e");
-    btn.disabled=true; btn.textContent="Salvando…";
-    const {error}=await sb.from("lancamento").update({
-      descricao:desc,valor,data_compra:bg.querySelector("#fData").value||null,
+    const dataNova=bg.querySelector("#fData").value||null;
+    const dados={descricao:desc,valor,data_compra:dataNova,
       categoria_id:bg.querySelector("#fCat").value||null,
-      conta_id:bg.querySelector("#fConta").value||null
-    }).eq("id",x.id);
+      conta_id:bg.querySelector("#fConta").value||null};
+    btn.disabled=true; btn.textContent="Salvando…";
+    if(dataNova){
+      const {data:compNova,error:e1}=await sb.rpc("sugerir_competencia",
+        {p_conta:dados.conta_id,p_data:dataNova});
+      if(e1){ btn.disabled=false; btn.textContent="Salvar"; return erro(e1); }
+      dados.competencia=compNova;
+    }
+    const {error}=await sb.from("lancamento").update(dados).eq("id",x.id);
     btn.disabled=false; btn.textContent="Salvar";
     if(error) return erro(error);
-    fechar(); toast("Salvo."); telaMes();
+    fechar();
+    if(dados.competencia && dados.competencia!==x.competencia){
+      const i=+dados.competencia.slice(5,7)-1;
+      toast("Salvo. Movido para a fatura de "+MESES[i]+"/"+dados.competencia.slice(2,4)+".");
+    } else toast("Salvo.");
+    telaMes();
   };
 }
 

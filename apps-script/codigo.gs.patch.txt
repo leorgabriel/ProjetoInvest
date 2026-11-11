@@ -1,0 +1,12 @@
+Em codigo.gs, dentro de salvarLancamento(dados), troque a linha:
+
+  const acaoLog = dados.modalidade === 'parcelado' ? 'Parcelado' : 'À vista';
+
+por:
+
+  const acaoLog = (dados.modalidade === 'parcelado' ? 'Parcelado' : 'À vista') + (dados.origemSync ? ' (sync)' : '');
+
+Essa é a única mudança necessária no seu código existente. O restante da função
+(gravação na planilha, cache de categorias, etc.) continua idêntico — só o texto
+gravado na coluna "Ação" do Log passa a ter o sufixo " (sync)" quando o lançamento
+vier do ProjetoInvest, pra você diferenciar de um lançamento feito direto no celular.

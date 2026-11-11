@@ -32,3 +32,12 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                recalcula parcela_num dos lançamentos já gerados
 28_corrige_parcela_coerente        2026-11-10  a constraint parcela_coerente só previa parcela_num com
                                                compra_id; agora também aceita com recorrencia_id
+29_novo_lancamento_respeita_competencia 2026-11-10  novo_lancamento() passa a usar sugerir_competencia()
+                                               (já existia, nunca tinha sido chamada) quando há data:
+                                               respeita o fechamento do cartão em vez do mês aberto no app
+30_novo_lancamento_retorna_competencia  2026-11-10  retorna a competência usada, pro app avisar quando
+                                               o lançamento cai em outro mês/fatura
+31-35_sync_planilha                     2026-11-11  config_app (token/url/cursor) + sincronizar_planilha():
+                                               a cada 3h (pg_cron) envia lançamentos novos (à vista/parcelado)
+                                               pro Apps Script (doPost em apps-script/Sync.gs), que grava na
+                                               planilha reaproveitando salvarLancamento(); fixos ficam de fora
