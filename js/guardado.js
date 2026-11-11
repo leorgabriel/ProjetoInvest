@@ -2,9 +2,10 @@ import {sb} from "./supabase-client.js";
 import {MESES} from "./estado.js";
 import {$, esc, brl, hojeISO, num, toast, erro, sheet, fechar} from "./util.js";
 
-const TIPOS=[["reserva","Reserva"],["renda_fixa","Renda fixa"],["renda_variavel","Renda variável"],
-  ["cripto","Cripto"],["previdencia","Previdência"],["outro","Outro"]];
+const TIPOS=[["reserva","Reserva"],["caixinha","Caixinha (% do CDI)"],["renda_fixa","Renda fixa"],
+  ["fii","FII"],["renda_variavel","Renda variável"],["cripto","Cripto"],["previdencia","Previdência"],["outro","Outro"]];
 const NOME_TIPO=Object.fromEntries(TIPOS);
+const SEM_TAXA=new Set(["caixinha","fii"]); // rendimento não é previsível por uma taxa fixa a.a.
 const dataBR=d=>d?d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4):"";
 const mesLabel=chave=>MESES[+chave.slice(5,7)-1].slice(0,3)+"/"+chave.slice(2,4);
 
@@ -13,6 +14,17 @@ function projecao(saldo,taxaAA,meses){
   if(!taxaAA||saldo<=0) return null;
   const mensal=Math.pow(1+taxaAA/100,1/12)-1;
   return saldo*Math.pow(1+mensal,meses);
+}
+
+/* média dos últimos rendimentos lançados (sem assumir taxa fixa) — usada em caixinha/FII */
+function mediaRendimento(movs){
+  const r=(movs||[]).filter(m=>m.tipo==="rendimento").slice(-6);
+  if(!r.length) return null;
+  return r.reduce((s,m)=>s+Number(m.valor),0)/r.length;
+}
+function projecaoMedia(saldo,media,meses){
+  if(media==null) return null;
+  return saldo+media*meses;
 }
 
 /* ---------------- tela: investido ---------------- */
@@ -88,7 +100,8 @@ function cardAplicacao(i){
     "<div><div style=\"font-weight:600\">"+esc(i.nome)+"</div>"+
     '<div class="mu" style="font-size:.76rem">'+esc(i.instituicao||NOME_TIPO[i.tipo]||i.tipo)+
     (i.data_abertura?" · desde "+dataBR(i.data_abertura):"")+
-    (i.taxa_rendimento_aa?" · "+Number(i.taxa_rendimento_aa).toFixed(2).replace(".",",")+"% a.a.":"")+"</div></div>"+
+    (i.tipo==="fii"&&i.cotas?" · "+Number(i.cotas).toLocaleString("pt-BR")+" cotas":"")+
+    (!SEM_TAXA.has(i.tipo)&&i.taxa_rendimento_aa?" · "+Number(i.taxa_rendimento_aa).toFixed(2).replace(".",",")+"% a.a.":"")+"</div></div>"+
     '<div style="text-align:right"><div style="font-weight:700">'+brl(i.saldo)+"</div>"+
     (pct!==null?'<div class="mu" style="font-size:.72rem">'+pct+"% de "+brl(i.objetivo_valor)+"</div>":"")+
     "</div></div>"+(pct!==null?'<div class="barra"><i style="width:'+Math.max(2,pct)+'%"></i></div>':"")+
@@ -96,12 +109,26 @@ function cardAplicacao(i){
 }
 
 /* ---------------- ações da aplicação ---------------- */
-function sheetAplicacao(i){
+async function sheetAplicacao(i){
   if(!i)return;
-  const p6=projecao(i.saldo,i.taxa_rendimento_aa,6), p12=projecao(i.saldo,i.taxa_rendimento_aa,12);
+  let p6=null,p12=null,notaProjecao="";
+  if(SEM_TAXA.has(i.tipo)){
+    const {data:movs}=await sb.from("movimento_investimento").select("tipo,valor,data")
+      .eq("investimento_id",i.id).order("data");
+    const media=mediaRendimento(movs||[]);
+    if(media!=null){
+      p6=projecaoMedia(i.saldo,media,6); p12=projecaoMedia(i.saldo,media,12);
+      notaProjecao="Com base na média dos últimos rendimentos lançados ("+brl(media)+"/mês), sem considerar novos aportes, resgates ou variação de mercado.";
+    }
+  } else {
+    p6=projecao(i.saldo,i.taxa_rendimento_aa,6); p12=projecao(i.saldo,i.taxa_rendimento_aa,12);
+    if(p6!==null) notaProjecao="Com base em "+Number(i.taxa_rendimento_aa).toFixed(2).replace(".",",")+
+      "% a.a., sem considerar novos aportes ou resgates.";
+  }
   const bg=sheet(i.nome,
     '<div class="mu" style="margin:-8px 0 16px;font-size:.86rem">Saldo '+brl(i.saldo)+
-      " · aportado "+brl(i.total_aportado)+" · rendeu "+brl(i.total_rendimento)+"</div>"+
+      " · aportado "+brl(i.total_aportado)+" · rendeu "+brl(i.total_rendimento)+
+      (i.tipo==="fii"&&i.cotas?" · "+Number(i.cotas).toLocaleString("pt-BR")+" cotas":"")+"</div>"+
     '<div class="mu" style="font-size:.78rem;margin:-10px 0 16px;line-height:1.5">'+
       (i.data_abertura?"Aberta em "+dataBR(i.data_abertura)+". ":"")+
       (i.ativo?"":"Desativada"+(i.desativado_em?" em "+dataBR(i.desativado_em):"")+". ")+
@@ -109,8 +136,9 @@ function sheetAplicacao(i){
     (p6!==null?'<div class="kpis" style="margin:0 0 16px">'+
       '<div class="kpi"><small>Projeção em 6 meses</small><b>'+brl(p6)+'</b></div>'+
       '<div class="kpi"><small>Projeção em 12 meses</small><b>'+brl(p12)+'</b></div></div>'+
-      '<div class="mu" style="font-size:.72rem;margin:-10px 0 16px">Com base em '+
-      Number(i.taxa_rendimento_aa).toFixed(2).replace(".",",")+'% a.a., sem considerar novos aportes ou resgates.</div>':'')+
+      '<div class="mu" style="font-size:.72rem;margin:-10px 0 16px">'+notaProjecao+'</div>':'')+
+    (i.tipo==="fii"?'<div class="mu" style="font-size:.76rem;margin:-10px 0 16px">O valor de mercado da cota varia — '+
+      'use "Ajuste" ao registrar movimento pra corrigir o saldo de tempos em tempos (pode ser negativo).</div>':'')+
     (i.ativo?'<button class="btn sec" id="aMov">Registrar movimento</button><div style="height:10px"></div>':'')+
     '<button class="btn sec" id="aEd">Editar</button>');
   const bMov=bg.querySelector("#aMov");
@@ -128,16 +156,26 @@ function sheetNovaAplicacao(){
     '<label class="campo"><span>Meta (opcional)</span><input class="inp" id="nMeta" inputmode="decimal" placeholder="0,00"></label></div>'+
     '<div class="linha2"><label class="campo"><span>Data de abertura</span><input class="inp" type="date" id="nData" value="'+
       hojeISO()+'"></label>'+
-    '<label class="campo"><span>Rendimento esperado (% a.a.)</span><input class="inp" id="nTaxa" inputmode="decimal" placeholder="0,00"></label></div>'+
+    '<label class="campo" id="nTaxaBox"><span>Rendimento esperado (% a.a.)</span><input class="inp" id="nTaxa" inputmode="decimal" placeholder="0,00"></label>'+
+    '<label class="campo hide" id="nCotasBox"><span>Cotas</span><input class="inp" id="nCotas" inputmode="decimal" placeholder="0"></label></div>'+
     '<div style="height:16px"></div><button class="btn" id="nOk">Criar</button>');
+  function pintaTipo(){
+    const t=bg.querySelector("#nTipo").value;
+    bg.querySelector("#nTaxaBox").classList.toggle("hide",SEM_TAXA.has(t));
+    bg.querySelector("#nCotasBox").classList.toggle("hide",t!=="fii");
+  }
+  bg.querySelector("#nTipo").onchange=pintaTipo; pintaTipo();
   bg.querySelector("#nOk").onclick=async()=>{
     const nome=bg.querySelector("#nNome").value.trim(); if(!nome)return toast("Informe o nome.","e");
     const meta=num(bg.querySelector("#nMeta").value);
     const taxa=num(bg.querySelector("#nTaxa").value);
+    const cotas=num(bg.querySelector("#nCotas").value);
+    const tipo=bg.querySelector("#nTipo").value;
     const {error}=await sb.from("investimento").insert({nome,instituicao:bg.querySelector("#nInst").value.trim()||null,
-      tipo:bg.querySelector("#nTipo").value,objetivo_valor:isNaN(meta)||meta<=0?null:meta,
+      tipo,objetivo_valor:isNaN(meta)||meta<=0?null:meta,
       data_abertura:bg.querySelector("#nData").value||hojeISO(),
-      taxa_rendimento_aa:isNaN(taxa)?null:taxa});
+      taxa_rendimento_aa:SEM_TAXA.has(tipo)||isNaN(taxa)?null:taxa,
+      cotas:tipo==="fii"&&!isNaN(cotas)?cotas:null});
     if(error)return erro(error);
     fechar(); toast("Aplicação criada."); telaGuardado();};
 }
@@ -153,29 +191,56 @@ function sheetEditarAplicacao(i){
       (i.objetivo_valor?Number(i.objetivo_valor).toFixed(2).replace(".",","):"")+'"></label></div>'+
     '<div class="linha2"><label class="campo"><span>Data de abertura</span><input class="inp" type="date" id="eData" value="'+
       (i.data_abertura||"")+'"></label>'+
-    '<label class="campo"><span>Rendimento esperado (% a.a.)</span><input class="inp" id="eTaxa" inputmode="decimal" value="'+
-      (i.taxa_rendimento_aa!=null?Number(i.taxa_rendimento_aa).toFixed(2).replace(".",","):"")+'"></label></div>'+
+    '<label class="campo" id="eTaxaBox"><span>Rendimento esperado (% a.a.)</span><input class="inp" id="eTaxa" inputmode="decimal" value="'+
+      (i.taxa_rendimento_aa!=null?Number(i.taxa_rendimento_aa).toFixed(2).replace(".",","):"")+'"></label>'+
+    '<label class="campo hide" id="eCotasBox"><span>Cotas</span><input class="inp" id="eCotas" inputmode="decimal" value="'+
+      (i.cotas!=null?Number(i.cotas).toLocaleString("pt-BR"):"")+'"></label></div>'+
     '<label class="sw">Aplicação ativa<input type="checkbox" id="eAtivo"'+(i.ativo?" checked":"")+'></label>'+
     '<div class="mu" style="font-size:.76rem;margin:4px 0 0">Desativar some da lista principal, mas mantém o '+
     'histórico e a data em que foi desativada.</div>'+
-    '<div style="height:14px"></div><button class="btn" id="eOk">Salvar</button>');
+    '<div style="height:14px"></div><button class="btn" id="eOk">Salvar</button>'+
+    (!i.ativo?'<div style="height:10px"></div><button class="btn per" id="eEx">Excluir definitivamente</button>':''));
+  function pintaTipo(){
+    const t=bg.querySelector("#eTipo").value;
+    bg.querySelector("#eTaxaBox").classList.toggle("hide",SEM_TAXA.has(t));
+    bg.querySelector("#eCotasBox").classList.toggle("hide",t!=="fii");
+  }
+  bg.querySelector("#eTipo").onchange=pintaTipo; pintaTipo();
   bg.querySelector("#eOk").onclick=async e=>{
     const btn=e.currentTarget;
     const nome=bg.querySelector("#eNome").value.trim();
     if(!nome) return toast("Informe o nome.","e");
     const meta=num(bg.querySelector("#eMeta").value);
     const taxa=num(bg.querySelector("#eTaxa").value);
+    const cotas=num(bg.querySelector("#eCotas").value);
     const ativo=bg.querySelector("#eAtivo").checked;
+    const tipo=bg.querySelector("#eTipo").value;
     const dados={nome,instituicao:bg.querySelector("#eInst").value.trim()||null,
-      tipo:bg.querySelector("#eTipo").value,objetivo_valor:isNaN(meta)||meta<=0?null:meta,
+      tipo,objetivo_valor:isNaN(meta)||meta<=0?null:meta,
       data_abertura:bg.querySelector("#eData").value||null,
-      taxa_rendimento_aa:isNaN(taxa)?null:taxa,ativo};
+      taxa_rendimento_aa:SEM_TAXA.has(tipo)||isNaN(taxa)?null:taxa,
+      cotas:tipo==="fii"&&!isNaN(cotas)?cotas:null,ativo};
     if(ativo!==i.ativo) dados.desativado_em=ativo?null:hojeISO();
     btn.disabled=true; btn.textContent="Salvando…";
     const {error}=await sb.from("investimento").update(dados).eq("id",i.id);
     btn.disabled=false; btn.textContent="Salvar";
     if(error) return erro(error);
     fechar(); toast("Salvo."); telaGuardado();
+  };
+  bg.querySelector("#eEx")?.addEventListener("click",()=>confirmarExcluirAplicacao(i));
+}
+
+function confirmarExcluirAplicacao(i){
+  const bg=sheet("Excluir aplicação",
+    '<p class="mu" style="margin:-6px 0 16px;line-height:1.5">Excluir <b style="color:var(--tx)">'+esc(i.nome)+
+      '</b> e todo o histórico de movimentos? Essa ação não pode ser desfeita.</p>'+
+    '<button class="btn per" id="xSim">Excluir definitivamente</button>'+
+    '<div style="height:10px"></div><button class="btn sec" id="xNao">Cancelar</button>');
+  bg.querySelector("#xNao").onclick=fechar;
+  bg.querySelector("#xSim").onclick=async()=>{
+    const {error}=await sb.from("investimento").delete().eq("id",i.id);
+    if(error) return erro(error);
+    fechar(); toast("Aplicação excluída."); telaGuardado();
   };
 }
 
@@ -197,7 +262,7 @@ function sheetMovimento(i){
     bg.querySelectorAll("#mTipo .chip").forEach(o=>o.classList.toggle("on",o===b));});
   bg.querySelector("#mOk").onclick=async()=>{
     const v=num(bg.querySelector("#mValor").value);
-    if(isNaN(v)||v<=0)return toast("Informe um valor válido.","e");
+    if(isNaN(v)||v===0||(tipo!=="ajuste"&&v<0))return toast("Informe um valor válido.","e");
     const {error}=await sb.from("movimento_investimento").insert({investimento_id:i.id,
       tipo,valor:v,data:bg.querySelector("#mData").value||hojeISO()});
     if(error)return erro(error);

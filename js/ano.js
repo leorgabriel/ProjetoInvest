@@ -10,7 +10,8 @@ export async function telaAno(){
     sb.from("v_parcelas_futuras").select("*").order("competencia").limit(200),
     sb.from("v_comprometido").select("*").order("competencia").limit(24)]);
   const ms=r.data||[];
-  const tot=ms.reduce((a,m)=>({e:a.e+ +m.entradas_total,g:a.g+ +m.gastos_bruto,s:a.s+ +m.saldo}),{e:0,g:0,s:0});
+  const tot=ms.reduce((a,m)=>({e:a.e+ +m.entradas_total,g:a.g+ +m.gastos_bruto,
+    gl:a.gl+ +m.gastos_liquido,s:a.s+ +m.saldo}),{e:0,g:0,gl:0,s:0});
 
   const maxGasto=Math.max(1,...ms.map(m=>+m.gastos_bruto));
   let h='<div class="hero" style="margin-top:16px"><div class="lbl"><span>Gastos por mês em '+S.ano+'</span></div>'+
@@ -25,7 +26,6 @@ export async function telaAno(){
   const comGasto=ms.filter(m=>+m.gastos_bruto>0);
   if(comGasto.length){
     const pior=comGasto.reduce((a,m)=>+m.gastos_bruto>+a.gastos_bruto?m:a);
-    const poup=tot.e>0?Math.round(tot.s/tot.e*100):0;
     const cat=await sb.from("v_gastos_categoria").select("categoria,valor_bruto")
       .gte("competencia",S.ano+"-01-01").lte("competencia",S.ano+"-12-01");
     const porCat={};
@@ -33,7 +33,7 @@ export async function telaAno(){
     const top=Object.entries(porCat).sort((a,b)=>b[1]-a[1])[0];
     h+='<h2>Fechamento do ano</h2><div class="kpis" style="margin-top:0">'+
       '<div class="kpi"><small>Média mensal de gastos</small><b>'+brl(tot.g/comGasto.length)+'</b></div>'+
-      '<div class="kpi"><small>Taxa de poupança</small><b class="'+(poup<0?"er":"ok")+'">'+poup+'%</b></div>'+
+      '<div class="kpi"><small>Total gasto no ano</small><b>'+brl(tot.gl)+'</b></div>'+
       '<div class="kpi"><small>Mês mais caro</small><b>'+MESES[+pior.competencia.slice(5,7)-1]+'</b>'+
       '<small style="margin-top:2px">'+brl(pior.gastos_bruto)+'</small></div>'+
       (top?'<div class="kpi"><small>Maior categoria</small><b>'+esc(top[0])+'</b>'+

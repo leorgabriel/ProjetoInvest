@@ -41,3 +41,6 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                a cada 3h (pg_cron) envia lançamentos novos (à vista/parcelado)
                                                pro Apps Script (doPost em apps-script/Sync.gs), que grava na
                                                planilha reaproveitando salvarLancamento(); fixos ficam de fora
+36_investimento_caixinha_fii             2026-11-11  tipo_investimento ganha 'caixinha' e 'fii';
+                                               investimento.cotas (qtd de cotas, só usado por FII)
+37_view_investimento_cotas               2026-11-11  v_investimento expõe a coluna cotas

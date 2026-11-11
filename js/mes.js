@@ -243,12 +243,13 @@ export function sheetNovoLancamento(){
   let modo="avista";
   const bg=sheet("Novo lançamento",
     '<div class="chips" id="nmModo" style="margin-bottom:14px">'+
-      [["avista","À vista"],["parcelado","Parcelado"],["fixo","Fixo"]].map((m,i)=>
+      [["avista","À vista"],["parcelado","Parcelado"]].map((m,i)=>
       '<button type="button" class="chip'+(i===0?" on":"")+'" data-m="'+m[0]+'">'+m[1]+"</button>").join("")+'</div>'+
     '<label class="campo"><span>Descrição</span><input class="inp" id="nDesc" placeholder="Supermercado, assinatura…"></label>'+
-    '<div class="linha2"><label class="campo"><span>Valor</span>'+
+    '<div class="linha2"><label class="campo"><span id="nValorLabel">Valor</span>'+
       '<input class="inp" id="nValor" inputmode="decimal" placeholder="0,00"></label>'+
     '<label class="campo" id="nDataBox"><span>Data</span><input class="inp" type="date" id="nData" value="'+hojeISO()+'"></label></div>'+
+    '<div class="mu" id="nResumoParc" style="margin:-6px 0 12px"></div>'+
     '<div class="linha2"><label class="campo"><span>Categoria</span><select class="inp" id="nCat"><option value="">—</option>'+
       C.cat.map(c=>'<option value="'+c.id+'">'+esc(c.nome)+'</option>').join("")+'</select></label>'+
     '<label class="campo"><span>Forma de pagamento</span><select class="inp" id="nConta"><option value="">—</option>'+
@@ -261,13 +262,30 @@ export function sheetNovoLancamento(){
     '<div style="height:16px"></div><button class="btn" id="nOk">Lançar</button>');
 
   const extra=bg.querySelector("#nExtra");
+  function valorParcela(){
+    const total=num(bg.querySelector("#nValor").value);
+    const n=parseInt(bg.querySelector("#nTot")?.value,10)||1;
+    return isNaN(total)?NaN:Math.round(total/n*100)/100;
+  }
+  function atualizarResumoParc(){
+    const resumo=bg.querySelector("#nResumoParc");
+    if(modo!=="parcelado"){ resumo.textContent=""; return; }
+    const total=num(bg.querySelector("#nValor").value);
+    const n=parseInt(bg.querySelector("#nTot")?.value,10)||1;
+    if(isNaN(total)||total===0||n<1){ resumo.textContent=""; return; }
+    const vp=valorParcela();
+    resumo.textContent=n+"x "+brl(vp)+" (total "+brl(total)+")";
+  }
+  bg.querySelector("#nValor").addEventListener("input",atualizarResumoParc);
   function pintaExtra(){
+    bg.querySelector("#nValorLabel").textContent=modo==="parcelado"?"Valor total da compra":"Valor";
     if(modo==="parcelado"){
       extra.innerHTML='<div class="linha2"><label class="campo"><span>Parcelas</span>'+
         '<input class="inp" type="number" min="1" max="60" id="nTot" value="2"></label>'+
         '<label class="campo"><span>Esta é a parcela nº</span>'+
         '<input class="inp" type="number" min="1" id="nNum" value="1"></label></div>'+
         '<label class="sw">Lançar as próximas parcelas nos meses seguintes<input type="checkbox" id="nRep" checked></label>';
+      extra.querySelector("#nTot").addEventListener("input",atualizarResumoParc);
     } else if(modo==="fixo"){
       extra.innerHTML='<div class="linha2"><label class="campo"><span>Vence no dia</span>'+
         '<input class="inp" type="number" min="1" max="31" id="nVenc" placeholder="—"></label>'+
@@ -284,9 +302,9 @@ export function sheetNovoLancamento(){
         extra.querySelector("#nParcBox").classList.toggle("hide",!ev.target.checked);
     } else extra.innerHTML="";
   }
-  pintaExtra();
+  pintaExtra(); atualizarResumoParc();
   bg.querySelectorAll("#nmModo .chip").forEach(b=>b.onclick=()=>{
-    modo=b.dataset.m; pintaExtra();
+    modo=b.dataset.m; pintaExtra(); atualizarResumoParc();
     bg.querySelectorAll("#nmModo .chip").forEach(o=>o.classList.toggle("on",o===b));
     bg.querySelector("#nDataBox").classList.toggle("hide",modo==="fixo");
   });
@@ -313,9 +331,10 @@ export function sheetNovoLancamento(){
   bg.querySelector("#nOk").onclick=async e=>{
     const btn=e.currentTarget;
     const desc=bg.querySelector("#nDesc").value.trim();
-    const valor=num(bg.querySelector("#nValor").value);
+    const valorDigitado=num(bg.querySelector("#nValor").value);
     if(!desc) return toast("Informe a descrição.","e");
-    if(isNaN(valor)||valor===0) return toast("Informe um valor.","e");
+    if(isNaN(valorDigitado)||valorDigitado===0) return toast("Informe um valor.","e");
+    const valor=modo==="parcelado"?valorParcela():valorDigitado;
     const catId=bg.querySelector("#nCat").value||null;
     const contaId=bg.querySelector("#nConta").value||null;
 
