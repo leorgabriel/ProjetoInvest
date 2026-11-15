@@ -51,6 +51,7 @@ pessoa num gasto dividido, em percentual ou em valor.
 - Controle do que cada pessoa deve, com quitação em lote
 - Comprometimento dos meses futuros e fechamento anual
 - Acompanhamento de investimentos, separado do saldo corrente
+- Painel para computador (`painel.html`) com filtros globais, em construção
 
 ## Estrutura
 
@@ -67,6 +68,13 @@ js/ano.js              tela do ano
 js/guardado.js         tela de investimentos
 js/cadastros.js        categorias, contas, pessoas e convites
 js/puxar.js            puxar para atualizar
+painel.html            painel para computador (telas a partir de 1024px), com login próprio
+css/painel.css         layout do painel (carregado depois de estilo.css)
+js/painel/app.js       entrada do painel: sessão, carga dos dados, troca de seção por #hash
+js/painel/sessao.js    login do painel (entrar e recuperar senha)
+js/painel/dados.js     busca única paginada + funções de agregação puras
+js/painel/filtros.js   filtros globais (período, categoria, conta, pessoa, valor, regime, débito)
+js/painel/secoes.js    conteúdo de cada seção do painel
 manifest.webmanifest   manifesto do PWA
 icons/                 ícone do app
 backup/                exportações diárias do banco, em JSON
