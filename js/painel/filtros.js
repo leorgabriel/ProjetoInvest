@@ -13,6 +13,11 @@ function gravar(){ try{ localStorage.setItem(CHAVE,JSON.stringify(F)); }catch{} 
 
 export const F={...PADRAO,...ler()};
 
+/* filtro cruzado: vem de cliques nos gráficos, vale para a seção toda e não é salvo.
+   categoria usa "nula" para "Sem categoria". */
+export const X={mes:null,categoria:null};
+export const limparX=()=>{ X.mes=null; X.categoria=null; };
+
 const doisDig=n=>String(n).padStart(2,"0");
 export function mesAtual(){ const d=new Date(); return d.getFullYear()+"-"+doisDig(d.getMonth()+1); }
 function voltaMeses(mes,n){ let [a,m]=mes.split("-").map(Number); m-=n;

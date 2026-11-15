@@ -51,7 +51,8 @@ pessoa num gasto dividido, em percentual ou em valor.
 - Controle do que cada pessoa deve, com quitação em lote
 - Comprometimento dos meses futuros e fechamento anual
 - Acompanhamento de investimentos, separado do saldo corrente
-- Painel para computador (`painel.html`) com filtros globais, em construção
+- Painel para computador (`painel.html`) com filtros globais, indicadores com variação,
+  evolução mensal, gastos por categoria, filtro cruzado pelos gráficos e tabela de lançamentos
 
 ## Estrutura
 
@@ -74,7 +75,10 @@ js/painel/app.js       entrada do painel: sessão, carga dos dados, troca de se�
 js/painel/sessao.js    login do painel (entrar e recuperar senha)
 js/painel/dados.js     busca única paginada + funções de agregação puras
 js/painel/filtros.js   filtros globais (período, categoria, conta, pessoa, valor, regime, débito)
-js/painel/secoes.js    conteúdo de cada seção do painel
+js/painel/secoes.js    mapa das seções do painel
+js/painel/visao.js     seções Visão geral (KPIs, evolução, treemap) e Lançamentos
+js/painel/graficos.js  ECharts (CDN, versão fixa, carregado sob demanda) e cores dos gráficos
+js/painel/tabela.js    tabela de lançamentos (ordenação, busca, paginação)
 manifest.webmanifest   manifesto do PWA
 icons/                 ícone do app
 backup/                exportações diárias do banco, em JSON

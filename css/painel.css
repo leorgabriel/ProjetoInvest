@@ -62,5 +62,46 @@ body.painel{padding-bottom:0}
 .cartao .sub{font-size:.8rem;color:var(--mu);margin-top:4px}
 .construcao{padding:40px;text-align:center;color:var(--mu);border:1px dashed var(--bd);border-radius:var(--r)}
 
+.cabC{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.cabC h3{margin:0}
+.dica{font-size:.74rem;color:var(--mu);margin-top:6px}
+.nota{font-size:.8rem;color:var(--mu);background:var(--s1);border:1px solid var(--bd);border-left:3px solid var(--ac);
+  border-radius:10px;padding:9px 12px;margin-bottom:14px;line-height:1.45}
+.nota.er{color:#ffc2cc;border-left-color:var(--er)}
+.sw.mini{padding:0;font-size:.78rem;color:var(--mu);gap:8px}
+.sw.mini input{transform:scale(.8);transform-origin:right center}
+
+/* KPIs */
+.kpiRow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.kpiP{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;min-width:0}
+.kpiP h3{margin:0 0 8px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);font-weight:600}
+.kpiP .big{font-size:1.4rem;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpiP .sub{font-size:.74rem;color:var(--mu);margin-top:2px}
+.kpiP .var{font-size:.74rem;color:var(--mu);margin-top:8px}
+.kpiP .var span{font-weight:650}
+
+/* filtro cruzado */
+.chipsX{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:.8rem}
+.chipsX .chip{padding:5px 11px;font-size:.78rem}
+.chipsX .chip b{margin-left:4px;opacity:.8}
+
+/* tabela de lançamentos */
+.tabTopo{margin-bottom:10px}
+.tabTopo .inp{height:38px;border-radius:10px;font-size:.88rem;max-width:360px}
+.tabRolo{overflow-x:auto}
+.tabL th{cursor:pointer;user-select:none;white-space:nowrap;text-align:left}
+.tabL th.n,.tabL td.n{text-align:right}
+.tabL td{text-align:left;white-space:nowrap}
+.tabL td:nth-child(3){white-space:normal;min-width:220px}
+.tabL th:hover{color:var(--tx)}
+.tabL th.on{color:var(--tx)}
+.tabL th.on::after{content:" " attr(data-dir);font-size:.65rem}
+.tabL tbody tr:hover td{background:var(--s2)}
+.tabL .dotT{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
+.tabRodape{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:.82rem}
+.tabRodape .pag{display:flex;align-items:center;gap:10px;color:var(--mu)}
+.tabRodape .pag button{width:30px;height:30px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);font-size:1rem}
+.tabRodape .pag button:disabled{opacity:.35;cursor:default}
+
 /* toast no canto, não esticado na largura toda */
 body.painel #toast{left:auto;right:24px;bottom:24px;max-width:420px}
