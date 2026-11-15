@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0A0A0C">
+<title>Painel · ProjetoInvest</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/painel.css">
+</head>
+<body class="painel">
+
+<!-- abaixo de 1024px o painel é bloqueado (só CSS) -->
+<div id="estreito">
+  <div class="logo">&#128421;&#65039;</div>
+  <h1>Tela pequena demais</h1>
+  <p class="mu">O painel foi feito para telas a partir de 1024&nbsp;px de largura.
+    Aumente a janela ou use o app.</p>
+  <a class="btn" href="./">Abrir o app</a>
+</div>
+
+<div id="login" class="hide">
+  <div class="logo">&#128176;</div>
+  <h1>Painel</h1>
+  <p class="mu">Entre com a mesma conta do app.</p>
+
+  <label class="campo"><span>E-mail</span>
+    <input id="lEmail" class="inp" type="email" autocapitalize="off" autocorrect="off"
+      autocomplete="username" placeholder="nome@exemplo.com"></label>
+  <label class="campo"><span>Senha</span>
+    <input id="lSenha" class="inp" type="password" autocomplete="current-password"></label>
+  <label class="sw lver">Mostrar senha<input type="checkbox" id="lVer"></label>
+
+  <button class="btn" id="lAcao">Entrar</button>
+  <button type="button" class="btn-txt" id="lEsqueci">Esqueci minha senha</button>
+  <div id="lMsg" class="lmsg"></div>
+  <a class="btn-txt" href="./" style="text-align:center;text-decoration:none">Criar conta pelo app</a>
+</div>
+
+<div id="painel" class="hide">
+  <aside id="lateral">
+    <div class="marca"><span class="logo">&#128176;</span><b>ProjetoInvest</b></div>
+    <div id="menu">
+      <a href="#visao" data-s="visao">Visão geral</a>
+      <a href="#fluxo" data-s="fluxo">Fluxo e compromissos</a>
+      <a href="#patrimonio" data-s="patrimonio">Patrimônio</a>
+      <a href="#pessoas" data-s="pessoas">Pessoas</a>
+      <a href="#lancamentos" data-s="lancamentos">Lançamentos</a>
+    </div>
+    <div class="rodape">
+      <div class="mu" id="pUsuario"></div>
+      <button type="button" class="chip" id="pAtualizar">Atualizar dados</button>
+      <a href="./" class="chip">Abrir o app</a>
+      <button type="button" class="chip" id="pSair">Sair</button>
+    </div>
+  </aside>
+  <div id="principal">
+    <header id="filtros"></header>
+    <main id="conteudo"><div class="carregando">Carregando…</div></main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="js/painel/app.js"></script>
+</body>
+</html>

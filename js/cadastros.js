@@ -63,6 +63,10 @@ export async function telaCadastros(){
       (c.usado_em?"conta criada":"aguardando cadastro")+'</span></span>'+
       '<button class="btn-icone" data-delcv="'+esc(c.email)+'">&#215;</button></div>').join("")
       :'<div class="vazio">Ninguém convidado ainda.</div>')+'</div>'+
+    '<div class="grupo"><span>Painel</span></div>'+
+    '<a class="btn sec" href="painel.html" style="display:grid;place-items:center;text-decoration:none">Abrir painel</a>'+
+    '<div class="mu" style="font-size:.78rem;text-align:center;margin-top:8px">'+
+    'Análises e gráficos para telas grandes (computador).</div>'+
     '<div class="grupo"><span>Conta</span></div>'+
     '<button class="btn sec" id="bSairC">Sair da conta</button>'+
     '<div class="mu" style="font-size:.78rem;text-align:center;margin-top:14px">'+
