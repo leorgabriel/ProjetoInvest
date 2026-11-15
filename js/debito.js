@@ -58,7 +58,7 @@ export async function telaDebito(){
       '<div><small>Média por dia'+(atual?" até hoje":"")+'</small><b>'+(lanc.length?brl(totDeb/dias):"—")+'</b></div></div>'+
       '<div class="mu nota">Competência: gasto no débito cai no mês da compra e já está somado no saldo da tela Mês.</div></div>';
   } else {
-    const entrou=v0(X.entradas_recebidas)+v0(X.rateios_recebidos);
+    const entrou=v0(X.entradas_recebidas)+v0(X.rateios_recebidos)+v0(X.entrada_debito);
     const A=ac.data||[], ini=A[0]?.inicio||"2026-11-01", s0=v0(A[0]?.saldo_inicial);
     const linhaA=A.find(x=>x.mes===c), antes=c<ini;
     const cart=antes?null:(linhaA?v0(linhaA.acumulado):(A.length?v0(A[A.length-1].acumulado):s0));
@@ -87,7 +87,8 @@ export async function telaDebito(){
     const linhas=[["Débito e dinheiro",X.saida_debito],["Pix e boleto",X.saida_pix_boleto],
       ["Faturas de cartão",X.saida_cartao],["Empréstimo",X.saida_emprestimo],["Sem forma de pagamento",X.saida_outros]]
       .filter(([,v])=>Math.abs(v0(v))>0.004);
-    const ent=[["Entradas recebidas",X.entradas_recebidas],["Devolvido por outras pessoas",X.rateios_recebidos]]
+    const ent=[["Entradas recebidas",X.entradas_recebidas],["Devolvido por outras pessoas",X.rateios_recebidos],
+      ["Entradas no débito",X.entrada_debito]]
       .filter(([,v])=>Math.abs(v0(v))>0.004);
     const it=(n,v,cls)=>'<div class="item"><span class="ct"><span class="nm">'+n+'</span></span>'+
       '<span class="vl'+(cls?" "+cls:"")+'">'+brl(v)+'</span></div>';

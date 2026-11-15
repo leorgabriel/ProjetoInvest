@@ -273,3 +273,4 @@ button.cat:active{background:var(--s2)}
 .hero .nota{font-size:.74rem;line-height:1.45;margin-top:11px}
 .hero .lbl{gap:10px}
 .lnk{display:inline;color:#b9a6ff;font-weight:600;font-size:inherit;padding:0;text-decoration:underline}
+.seg.sinal button{flex:1;padding:10px 0;font-size:.86rem}

@@ -79,3 +79,7 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
 44_caixa_acumulado                        2026-11-15  config_usuario (RLS) com marco zero e saldo inicial da carteira
                                                (padrão nov/26, R$ 0) e v_caixa_acumulado (security_invoker):
                                                saldo inicial + soma do fluxo de caixa mês a mês
+45_caixa_entradas_no_debito               2026-11-15  v_resumo_caixa: lançamento negativo no débito/dinheiro vira
+                                               entrada_debito (soma em "entrou"), positivo continua saída
+46_caixa_acumulado_inicio_futuro          2026-11-15  v_caixa_acumulado sempre inclui o mês de início, mesmo se
+                                               ele for posterior ao mês atual (antes devolvia vazio)

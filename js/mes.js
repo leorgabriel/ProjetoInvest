@@ -257,6 +257,7 @@ export function sheetNovoLancamento(){
       C.cat.map(c=>'<option value="'+c.id+'">'+esc(c.nome)+'</option>').join("")+'</select></label>'+
     '<label class="campo"><span>Forma de pagamento</span><select class="inp" id="nConta"><option value="">—</option>'+
       C.contas.map(c=>'<option value="'+c.id+'">'+esc(c.nome)+'</option>').join("")+'</select></label></div>'+
+    segSinal("n",false)+
     '<div id="nExtra"></div>'+
     '<div class="grupo" style="margin-top:18px"><span>Dividir com alguém</span></div>'+
     '<div class="chips" id="nPessoas">'+C.pessoas.map(p=>
@@ -306,8 +307,10 @@ export function sheetNovoLancamento(){
     } else extra.innerHTML="";
   }
   pintaExtra(); atualizarResumoParc();
+  ligarSinal(bg,"n");
   bg.querySelector("#nConta").onchange=ev=>{
     const deb=contaEhDebito(ev.target.value), bp=bg.querySelector('#nmModo [data-m="parcelado"]');
+    bg.querySelector("#nSinal").classList.toggle("hide",!deb);
     bp.disabled=deb; bp.style.opacity=deb?.35:"";
     if(deb && modo==="parcelado"){ bg.querySelector('#nmModo [data-m="avista"]').click();
       toast("Débito sai da conta na hora, então não é parcelado. Lançado como à vista."); }
@@ -343,9 +346,10 @@ export function sheetNovoLancamento(){
     const valorDigitado=num(bg.querySelector("#nValor").value);
     if(!desc) return toast("Informe a descrição.","e");
     if(isNaN(valorDigitado)||valorDigitado===0) return toast("Informe um valor.","e");
-    const valor=modo==="parcelado"?valorParcela():valorDigitado;
     const catId=bg.querySelector("#nCat").value||null;
     const contaId=bg.querySelector("#nConta").value||null;
+    let valor=modo==="parcelado"?valorParcela():valorDigitado;
+    if(contaEhDebito(contaId)) valor=aplicaSinal(bg,"n",valor);
     if(modo==="parcelado" && contaEhDebito(contaId))
       return toast("Débito não é parcelado. Escolha À vista ou outra forma de pagamento.","e");
 
@@ -410,13 +414,25 @@ export function sheetNovoLancamento(){
   };
 }
 
+/* débito: saída (positivo) ou entrada (negativo) */
+function segSinal(p,entrada,oculto=true){
+  return '<div class="campo'+(oculto?" hide":"")+'" id="'+p+'Sinal" style="margin-bottom:12px"><span>No débito, esse valor é</span>'+
+    '<div class="seg sinal"><button type="button" data-sn="saida"'+(entrada?"":' class="on"')+'>Saída</button>'+
+    '<button type="button" data-sn="entrada"'+(entrada?' class="on"':"")+'>Entrada</button></div></div>';
+}
+function ligarSinal(bg,p){
+  bg.querySelectorAll("#"+p+"Sinal [data-sn]").forEach(b=>b.onclick=()=>
+    bg.querySelectorAll("#"+p+"Sinal [data-sn]").forEach(o=>o.classList.toggle("on",o===b)));
+}
+const aplicaSinal=(bg,p,v)=>bg.querySelector("#"+p+'Sinal [data-sn="entrada"].on')?-Math.abs(v):Math.abs(v);
+
 /* ---------------- editar lançamento ---------------- */
 export function formHTML(x){
   const C=S.cad;
   return '<label class="campo"><span>Descrição</span><input class="inp" id="fDesc" value="'+
       esc(x.descricao||"")+'"></label>'+
     '<div class="linha2"><label class="campo"><span>Valor</span><input class="inp" id="fValor" inputmode="decimal" value="'+
-      Number(x.valor).toFixed(2).replace(".",",")+'"></label>'+
+      (contaEhDebito(x.conta_id)?Math.abs(x.valor):Number(x.valor)).toFixed(2).replace(".",",")+'"></label>'+
     '<label class="campo"><span>Data</span><input class="inp" type="date" id="fData" value="'+
       (x.data_compra||"")+'"></label></div>'+
     '<div class="linha2"><label class="campo"><span>Categoria</span><select class="inp" id="fCat"><option value="">—</option>'+
@@ -425,19 +441,25 @@ export function formHTML(x){
     '<label class="campo"><span>Forma de pagamento</span><select class="inp" id="fConta"><option value="">—</option>'+
       C.todasContas.map(c=>'<option value="'+c.id+'"'+(c.id===x.conta_id?" selected":"")+'>'+esc(c.nome)+'</option>').join("")+
       '</select></label></div>'+
+    segSinal("f",x.valor<0,!contaEhDebito(x.conta_id))+
     '<div style="height:14px"></div><button class="btn" id="fOk">Salvar</button>';
 }
 export function formEventos(bg,x){
+  ligarSinal(bg,"f");
+  bg.querySelector("#fConta").addEventListener("change",ev=>
+    bg.querySelector("#fSinal").classList.toggle("hide",!contaEhDebito(ev.target.value)));
   bg.querySelector("#fOk").onclick=async e=>{
     const btn=e.currentTarget;
     const desc=bg.querySelector("#fDesc").value.trim();
-    const valor=num(bg.querySelector("#fValor").value);
+    const contaId=bg.querySelector("#fConta").value||null;
+    let valor=num(bg.querySelector("#fValor").value);
     if(!desc) return toast("Informe a descrição.","e");
     if(isNaN(valor)||valor===0) return toast("Informe um valor.","e");
+    if(contaEhDebito(contaId)) valor=aplicaSinal(bg,"f",valor);
     const dataNova=bg.querySelector("#fData").value||null;
     const dados={descricao:desc,valor,data_compra:dataNova,
       categoria_id:bg.querySelector("#fCat").value||null,
-      conta_id:bg.querySelector("#fConta").value||null};
+      conta_id:contaId};
     btn.disabled=true; btn.textContent="Salvando…";
     if(dataNova){
       const {data:compNova,error:e1}=await sb.rpc("sugerir_competencia",
