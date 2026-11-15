@@ -109,7 +109,7 @@ function sheetCadastro(tipo,x){
     html+='<label class="campo"><span>Espécie</span><select class="inp" id="cEsp">'+
       ESPECIES.map(e=>'<option value="'+e[0]+'"'+(e[0]===x.especie?" selected":"")+'>'+e[1]+'</option>').join("")+
       '</select></label>'+
-      '<div class="linha2"><label class="campo"><span>Fecha no dia</span>'+
+      '<div class="linha2"><label class="campo" id="cFechBox"><span>Fecha no dia</span>'+
       '<input class="inp" type="number" min="1" max="31" id="cFech" placeholder="—" value="'+
       (x.dia_fechamento||"")+'"></label><label class="campo"><span>Vence no dia</span>'+
       '<input class="inp" type="number" min="1" max="31" id="cVenc" placeholder="—" value="'+
@@ -128,6 +128,11 @@ function sheetCadastro(tipo,x){
     (novo?"":'<div style="height:10px"></div><button class="btn per" id="cDel">Excluir</button>');
 
   const bg=sheet((novo?"Nova ":"Editar ")+ROTULO[tipo],html);
+  const semFatura=()=>["debito","dinheiro"].includes(bg.querySelector("#cEsp")?.value);
+  if(tipo==="conta"){
+    const ajusta=()=>bg.querySelector("#cFechBox").classList.toggle("hide",semFatura());
+    bg.querySelector("#cEsp").addEventListener("change",ajusta); ajusta();
+  }
 
   bg.querySelector("#cOk").onclick=async e=>{
     const btn=e.currentTarget, nome=bg.querySelector("#cNome").value.trim();
@@ -140,7 +145,7 @@ function sheetCadastro(tipo,x){
     }
     if(tipo==="conta"){
       d.especie=bg.querySelector("#cEsp").value;
-      d.dia_fechamento=parseInt(bg.querySelector("#cFech").value,10)||null;
+      d.dia_fechamento=semFatura()?null:(parseInt(bg.querySelector("#cFech").value,10)||null);
       d.dia_vencimento=parseInt(bg.querySelector("#cVenc").value,10)||null;
     }
     btn.disabled=true; btn.textContent="Salvando…";

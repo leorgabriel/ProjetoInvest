@@ -266,3 +266,10 @@ button.cat:active{background:var(--s2)}
 .kpi{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:11px 13px}
 .kpi small{display:block;color:var(--mu);font-size:.72rem;margin-bottom:3px}
 .kpi b{font-size:1.02rem}
+
+/* ===== Débito e caixa (sub-visão de Mês) ===== */
+.seg.visao{margin-top:14px}
+.seg.visao button{flex:1;padding:8px 0;font-size:.8rem}
+.hero .nota{font-size:.74rem;line-height:1.45;margin-top:11px}
+.hero .lbl{gap:10px}
+.lnk{display:inline;color:#b9a6ff;font-weight:600;font-size:inherit;padding:0;text-decoration:underline}

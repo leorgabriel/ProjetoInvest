@@ -2,6 +2,7 @@ import {sb} from "./supabase-client.js";
 import {MESES, S, preparados} from "./estado.js";
 import {$, esc, brl, comp, mesCorrente, hojeISO, num, toast, erro, sheet, fechar} from "./util.js";
 import {carregar} from "./nav.js";
+import {segVisao, ligarVisao, telaDebito, contaEhDebito} from "./debito.js";
 
 /* ---------------- seções recolhíveis ---------------- */
 const secaoAberta=id=>S.secoes[id]!==false;
@@ -26,6 +27,7 @@ export async function telaMes(){
     preparados.add(c);
     try{ await sb.rpc("preparar_mes",{p_competencia:c}); }catch(e){}
   }
+  if(S.visaoMes==="debito") return telaDebito();
   const limpo=!S.busca && !S.noAno;
   let q=sb.from("v_lancamento").select("*").order("data_compra",{ascending:false,nullsFirst:false})
        .order("criado_em",{ascending:false});
@@ -54,7 +56,7 @@ export async function telaMes(){
     if(dia<dias && av>0) proj=+R.gastos_bruto+(av/dia)*(dias-dia);
   }
 
-  let h='<div class="hero"><div class="lbl"><span>Saldo de '+MESES[S.mes]+'</span>'+
+  let h=segVisao()+'<div class="hero"><div class="lbl"><span>Saldo de '+MESES[S.mes]+'</span>'+
     '<div class="seg"><button data-lq="0"'+(S.liquido?"":' class="on"')+'>Bruto</button>'+
     '<button data-lq="1"'+(S.liquido?' class="on"':"")+'>Líquido</button></div></div>'+
     '<div class="val '+(R.saldo<0?"er":"")+'">'+brl(R.saldo)+'</div><div class="duo">'+
@@ -153,6 +155,7 @@ export async function telaMes(){
     d.addEventListener("toggle",()=>{ S.secoes[d.dataset.sec]=d.open; }));
 
   const acha=id=>lanc.find(x=>x.id===id)||(pe.data||[]).find(x=>x.id===id);
+  ligarVisao(alvo);
   alvo.querySelectorAll("[data-lq]").forEach(b=>b.onclick=()=>{S.liquido=b.dataset.lq==="1";telaMes();});
   alvo.querySelectorAll(".pcard").forEach(b=>b.onclick=()=>sheetReceber(b.dataset.pes,b.dataset.nome));
   alvo.querySelectorAll("[data-fat]").forEach(b=>b.onclick=()=>
@@ -173,7 +176,7 @@ export async function telaMes(){
   if(S.busca){qb.focus();qb.setSelectionRange(qb.value.length,qb.value.length);}
 }
 
-function linha(x){
+export function linha(x){
   const meta=[x.data_compra?x.data_compra.slice(8,10)+"/"+x.data_compra.slice(5,7):"",
               x.conta_nome].filter(Boolean).join(" · ");
   const bd=x.parcela_num?'<span class="bdg">'+x.parcela_num+(x.parcelas_total?"/"+x.parcelas_total:"")+"</span>":
@@ -189,7 +192,7 @@ function linha(x){
 }
 
 /* deslizar para editar ou excluir */
-function ligarSwipe(raiz,onEd,onEx){
+export function ligarSwipe(raiz,onEd,onEx){
   let alvo=null,x0=0,y0=0,dir=null;
   const fecha=()=>raiz.querySelectorAll(".swipe.aberto").forEach(s=>s.classList.remove("aberto"));
   raiz.addEventListener("touchstart",e=>{
@@ -222,7 +225,7 @@ function ligarSwipe(raiz,onEd,onEx){
 }
 
 /* exclusão sempre pede confirmação */
-function confirmarExclusao(x){
+export function confirmarExclusao(x){
   if(!x) return;
   const bg=sheet("Excluir lançamento",
     '<p class="mu" style="margin:-6px 0 16px;line-height:1.5">Excluir <b style="color:var(--tx)">'+
@@ -303,6 +306,12 @@ export function sheetNovoLancamento(){
     } else extra.innerHTML="";
   }
   pintaExtra(); atualizarResumoParc();
+  bg.querySelector("#nConta").onchange=ev=>{
+    const deb=contaEhDebito(ev.target.value), bp=bg.querySelector('#nmModo [data-m="parcelado"]');
+    bp.disabled=deb; bp.style.opacity=deb?.35:"";
+    if(deb && modo==="parcelado"){ bg.querySelector('#nmModo [data-m="avista"]').click();
+      toast("Débito sai da conta na hora, então não é parcelado. Lançado como à vista."); }
+  };
   bg.querySelectorAll("#nmModo .chip").forEach(b=>b.onclick=()=>{
     modo=b.dataset.m; pintaExtra(); atualizarResumoParc();
     bg.querySelectorAll("#nmModo .chip").forEach(o=>o.classList.toggle("on",o===b));
@@ -337,6 +346,8 @@ export function sheetNovoLancamento(){
     const valor=modo==="parcelado"?valorParcela():valorDigitado;
     const catId=bg.querySelector("#nCat").value||null;
     const contaId=bg.querySelector("#nConta").value||null;
+    if(modo==="parcelado" && contaEhDebito(contaId))
+      return toast("Débito não é parcelado. Escolha À vista ou outra forma de pagamento.","e");
 
     let rateios=[], invalido=false;
     pessoasSel.forEach(pid=>{
@@ -400,7 +411,7 @@ export function sheetNovoLancamento(){
 }
 
 /* ---------------- editar lançamento ---------------- */
-function formHTML(x){
+export function formHTML(x){
   const C=S.cad;
   return '<label class="campo"><span>Descrição</span><input class="inp" id="fDesc" value="'+
       esc(x.descricao||"")+'"></label>'+
@@ -416,7 +427,7 @@ function formHTML(x){
       '</select></label></div>'+
     '<div style="height:14px"></div><button class="btn" id="fOk">Salvar</button>';
 }
-function formEventos(bg,x){
+export function formEventos(bg,x){
   bg.querySelector("#fOk").onclick=async e=>{
     const btn=e.currentTarget;
     const desc=bg.querySelector("#fDesc").value.trim();
@@ -577,7 +588,7 @@ function sheetEntrada(x){
 }
 
 /* ---------------- item: ações ---------------- */
-function sheetItem(x){
+export function sheetItem(x){
   if(!x)return;
   const meta=[x.data_compra,x.conta_nome,x.categoria_nome].filter(Boolean).join(" · ");
   const bg=sheet(x.descricao,
