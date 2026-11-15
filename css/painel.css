@@ -115,3 +115,10 @@ body.painel #toast{left:auto;right:24px;bottom:24px;max-width:420px}
 .tabTopo .inp{flex:1 1 260px}
 .tabTopo .exportar{margin-left:auto;padding:8px 14px;font-size:.8rem}
 .bdg.anom{background:#3a2a0c;color:var(--wr);cursor:help}
+
+/* 6.1 Patrimônio e 6.2 Pessoas */
+.kpiRow.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pessoasRow{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.tabL tr.inativa td{color:var(--mu)}
+.objBar{height:6px;background:var(--s2);border-radius:4px;overflow:hidden;width:120px;margin-bottom:3px}
+.objBar i{display:block;height:100%;background:var(--ac);border-radius:4px}

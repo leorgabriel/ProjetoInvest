@@ -54,6 +54,7 @@ pessoa num gasto dividido, em percentual ou em valor.
 - Painel para computador (`painel.html`) com filtros globais, indicadores com variação,
   evolução mensal, gastos por categoria, filtro cruzado pelos gráficos, tabela de lançamentos,
   fluxo do dinheiro, realizado × orçamento (ou média), comprometimento futuro e calendário de gastos,
+  patrimônio (investimentos e carteira de caixa), pessoas (rateios a receber),
   destaque de gastos fora do padrão e exportação dos lançamentos em CSV
 
 ## Estrutura
@@ -81,6 +82,8 @@ js/painel/secoes.js    mapa das seções do painel
 js/painel/visao.js     seções Visão geral (KPIs, evolução, treemap) e Lançamentos
 js/painel/fluxo.js     seção Fluxo e compromissos (sankey, categorias no tempo, realizado × referência,
                        comprometido nos próximos 24 meses, calendário de gastos)
+js/painel/patrimonio.js seção Patrimônio (investido, evolução, distribuição por tipo, aplicações, carteira)
+js/painel/pessoas.js   seção Pessoas (a receber por pessoa, dividido por mês, pendentes)
 js/painel/comum.js     peças compartilhadas entre seções (filtro cruzado, recortes de lançamentos)
 js/painel/graficos.js  ECharts (CDN, versão fixa, carregado sob demanda) e cores dos gráficos
 js/painel/tabela.js    tabela de lançamentos (ordenação, busca, paginação, exportar CSV)
