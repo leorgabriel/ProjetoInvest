@@ -542,36 +542,41 @@ function sheetOrcamento(catId,nome,atual){
 /* ---------------- a receber ---------------- */
 async function sheetReceber(pid,nome){
   const [it,tot]=await Promise.all([
-    sb.from("rateio").select("id,recebido,percentual,valor,lancamento:lancamento_id(descricao,valor,competencia)")
-      .eq("pessoa_id",pid),
+    sb.from("rateio").select("id,recebido,percentual,valor,valor_recebido,data_recebimento,"+
+      "lancamento:lancamento_id(descricao,valor,competencia)").eq("pessoa_id",pid),
     sb.from("v_a_receber_pessoa").select("*").eq("pessoa_id",pid).maybeSingle()]);
   if(it.error) return erro(it.error);
   const mes=(it.data||[]).filter(r=>r.lancamento&&r.lancamento.competencia===comp());
   const T=tot.data||{pendente:0,itens:0,desde:null};
+  const parte=r=>r.valor!=null?Number(r.valor):Math.round(Number(r.lancamento.valor)*Number(r.percentual))/100;
+  const dataBR=d=>d?d.slice(8,10)+"/"+d.slice(5,7):"";
   const bg=sheet(nome,
     '<div class="kpis" style="margin:-4px 0 14px"><div class="kpi"><small>Em aberto no total</small>'+
     '<b class="'+(+T.pendente>0?"wr":"ok")+'">'+brl(T.pendente)+'</b></div>'+
     '<div class="kpi"><small>Itens pendentes</small><b>'+T.itens+
     (T.desde?' <span class="mu" style="font-size:.7rem">desde '+
       MESES[+T.desde.slice(5,7)-1].slice(0,3)+"/"+T.desde.slice(2,4)+'</span>':'')+'</b></div></div>'+
+    '<div class="mu" style="font-size:.76rem;margin:-4px 0 8px">Toque num item para registrar quanto foi recebido.</div>'+
     '<div class="lista">'+(mes.length?mes.map(r=>{
-      const v=r.valor!=null?r.valor:(Number(r.lancamento.valor)*Number(r.percentual)/100);
-      return '<label class="item"><input type="checkbox" data-r="'+r.id+'"'+(r.recebido?" checked":"")+
-        ' style="width:22px;height:22px;accent-color:#7C5CFF"><span class="ct"><span class="nm">'+
-        esc(r.lancamento.descricao)+'</span><span class="mt">'+
-        (r.percentual?r.percentual+"% de "+brl(r.lancamento.valor):"valor combinado")+
-        '</span></span><span class="vl">'+brl(v)+'</span></label>';}).join("")
+      const v=parte(r), dif=r.recebido&&r.valor_recebido!=null&&Math.abs(+r.valor_recebido-v)>0.004;
+      const mt=r.recebido
+        ?"recebido"+(r.data_recebimento?" em "+dataBR(r.data_recebimento):"")+(dif?" · combinado "+brl(v):"")
+        :(r.percentual?r.percentual+"% de "+brl(r.lancamento.valor):"valor combinado")+" · pendente";
+      return '<button class="item" data-r="'+r.id+'"><span class="dot" style="background:'+
+        (r.recebido?(dif?"var(--wr)":"var(--ok)"):"var(--mu)")+'"></span><span class="ct"><span class="nm">'+
+        esc(r.lancamento.descricao)+'</span><span class="mt">'+mt+'</span></span>'+
+        '<span class="vl'+(r.recebido?" ok":"")+'">'+brl(dif?r.valor_recebido:v)+'</span></button>';}).join("")
       :'<div class="vazio">Nada neste mês.</div>')+'</div>'+
     '<div style="height:12px"></div>'+
-    (mes.some(r=>!r.recebido)?'<button class="btn sec" id="rMes">Marcar o mês inteiro como recebido</button>'+
+    (mes.some(r=>!r.recebido)?'<button class="btn sec" id="rMes">Marcar o mês inteiro como recebido (valor combinado)</button>'+
       '<div style="height:10px"></div>':'')+
     (+T.pendente>0?'<button class="btn sec" id="rTudo">Quitar tudo que está em aberto</button>'+
       '<div style="height:10px"></div>':'')+
     '<button class="btn" id="okR">Pronto</button>');
-  bg.querySelectorAll("[data-r]").forEach(ch=>ch.onchange=async()=>{
-    const {error}=await sb.from("rateio").update({recebido:ch.checked,
-      data_recebimento:ch.checked?hojeISO():null}).eq("id",ch.dataset.r);
-    if(error) erro(error);});
+  bg.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{
+    const r=mes.find(x=>x.id===b.dataset.r);
+    if(r) sheetRecebimento(r,parte(r),()=>sheetReceber(pid,nome));
+  });
   const quitar=mc=>async e=>{
     const btn=e.currentTarget, antes=btn.textContent;
     btn.disabled=true; btn.textContent="Marcando…";
@@ -582,6 +587,52 @@ async function sheetReceber(pid,nome){
   const bm=bg.querySelector("#rMes"); if(bm) bm.onclick=quitar(comp());
   const bt=bg.querySelector("#rTudo"); if(bt) bt.onclick=quitar(null);
   bg.querySelector("#okR").onclick=()=>{fechar();telaMes();};
+}
+
+/* registrar o recebimento de um rateio: valor combinado ou outro valor (que passa a ser o valor final) */
+function sheetRecebimento(r,parte,voltar){
+  const outro=r.recebido&&r.valor_recebido!=null&&Math.abs(+r.valor_recebido-parte)>0.004;
+  const bg=sheet(r.lancamento.descricao,
+    '<div class="mu" style="margin:-8px 0 14px;font-size:.86rem">Parte combinada: <b style="color:var(--tx)">'+
+      brl(parte)+'</b>'+(r.percentual?' ('+r.percentual+'% de '+brl(r.lancamento.valor)+')':'')+'</div>'+
+    '<div class="campo" style="margin-bottom:12px"><span>Quanto foi recebido</span>'+
+      '<div class="seg sinal"><button type="button" data-q="total"'+(outro?"":' class="on"')+'>Valor combinado</button>'+
+      '<button type="button" data-q="outro"'+(outro?' class="on"':"")+'>Outro valor</button></div></div>'+
+    '<div class="linha2"><label class="campo'+(outro?"":" hide")+'" id="qValBox"><span>Valor recebido</span>'+
+      '<input class="inp" id="qVal" inputmode="decimal" placeholder="0,00" value="'+
+      (outro?Number(r.valor_recebido).toFixed(2).replace(".",","):"")+'"></label>'+
+    '<label class="campo"><span>Recebido em</span><input class="inp" type="date" id="qData" value="'+
+      (r.data_recebimento||hojeISO())+'"></label></div>'+
+    '<div class="mu" style="font-size:.76rem;margin:2px 0 0;line-height:1.5">Com outro valor, ele passa a ser o valor final '+
+      'desse item: o saldo do mês e o que você tem a receber usam o que realmente entrou.</div>'+
+    '<div style="height:14px"></div><button class="btn" id="qOk">Registrar recebimento</button>'+
+    (r.recebido?'<div style="height:10px"></div><button class="btn per" id="qDesf">Marcar como não recebido</button>':'')+
+    '<div style="height:10px"></div><button class="btn sec" id="qVoltar">Voltar</button>');
+  let modo=outro?"outro":"total";
+  bg.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{
+    modo=b.dataset.q;
+    bg.querySelectorAll("[data-q]").forEach(o=>o.classList.toggle("on",o===b));
+    bg.querySelector("#qValBox").classList.toggle("hide",modo!=="outro");
+    if(modo==="outro") bg.querySelector("#qVal").focus();
+  });
+  const salvar=async dados=>{
+    const {error}=await sb.from("rateio").update(dados).eq("id",r.id);
+    if(error) return erro(error);
+    toast(dados.recebido?"Recebimento registrado.":"Marcado como não recebido."); voltar();
+  };
+  bg.querySelector("#qOk").onclick=()=>{
+    const data=bg.querySelector("#qData").value||hojeISO();
+    let v=null;
+    if(modo==="outro"){
+      v=num(bg.querySelector("#qVal").value);
+      if(isNaN(v)||v<0) return toast("Informe o valor recebido (0 ou mais).","e");
+      if(Math.abs(v-parte)<0.005) v=null;     // igual ao combinado: guarda como valor cheio
+    }
+    salvar({recebido:true,data_recebimento:data,valor_recebido:v});
+  };
+  const d=bg.querySelector("#qDesf");
+  if(d) d.onclick=()=>salvar({recebido:false,data_recebimento:null,valor_recebido:null});
+  bg.querySelector("#qVoltar").onclick=voltar;
 }
 
 /* ---------------- entradas ---------------- */

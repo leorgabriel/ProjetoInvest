@@ -103,3 +103,12 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                do primeiro mês (pode ser retroativo) até o fim da quantidade
                                                informada, numerados 1/N..N/N, com o rateio em cada um. Sem
                                                quantidade: lança até o mês atual e preparar_mes segue depois
+52_consignado_iara_meses_anteriores_quitados 2026-11-15 Consignado Iara (fixo 100% rateado, descontado em folha):
+                                               23 meses anteriores a nov/26 com rateio recebido e lançamento
+                                               pago, na data do salário do mês (sem salário lançado: último
+                                               dia da competência). Saldos de competência inalterados
+53_rateio_valor_recebido                  2026-11-15  rateio.valor_recebido: recebido com outro valor (nulo = parte
+                                               combinada). Vira o valor final do rateio em v_lancamento
+                                               (rateado/líquido, logo no saldo), v_a_receber,
+                                               v_a_receber_pessoa e v_movimento_caixa. Sem valores
+                                               preenchidos, saída idêntica (conferida em transação)

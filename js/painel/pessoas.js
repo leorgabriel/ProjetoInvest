@@ -7,7 +7,9 @@ import {grafico, COR, brlCurto} from "./graficos.js";
    O resumo por pessoa vale para todo o histórico; o gráfico e a lista seguem o período
    e o filtro de pessoa. Inclui rateios de qualquer forma de pagamento (débito também),
    porque o valor a receber existe independente de onde o gasto foi pago. */
-const valorRateio=(r,l)=>r.valor!=null?+r.valor:(+l.valor)*(+r.percentual)/100;
+const parteRateio=(r,l)=>r.valor!=null?+r.valor:(+l.valor)*(+r.percentual)/100;
+/* recebido com outro valor: vale o que realmente entrou */
+const valorRateio=(r,l)=>r.recebido&&r.valor_recebido!=null?+r.valor_recebido:parteRateio(r,l);
 const dataBR=d=>d?d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4):"";
 
 export function pessoas(D,el){
