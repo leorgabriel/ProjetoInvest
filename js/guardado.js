@@ -31,16 +31,21 @@ function projecaoMedia(saldo,media,meses){
 export async function telaGuardado(){
   const [r,mv]=await Promise.all([
     sb.from("v_investimento").select("*").order("ordem"),
-    sb.from("movimento_investimento").select("data,tipo,valor").order("data")]);
+    sb.from("movimento_investimento").select("investimento_id,data,tipo,valor").order("data")]);
   if(r.error)return erro(r.error);
   const todos=r.data||[];
   const ativos=todos.filter(i=>i.ativo), inativos=todos.filter(i=>!i.ativo);
   const tot=ativos.reduce((s,i)=>s+ +i.saldo,0);
+  /* o gráfico considera só as aplicações ativas, para fechar com o total acima */
+  const idsAtivos=new Set(ativos.map(i=>i.id));
+  const grafico=mv.error
+    ?'<div class="er" style="font-size:.78rem;margin-top:12px">Não foi possível carregar o histórico: '+esc(mv.error.message)+'</div>'
+    :graficoEvolucao(evolucao((mv.data||[]).filter(m=>idsAtivos.has(m.investimento_id))));
 
   let h='<div class="hero" style="margin-top:16px"><div class="lbl"><span>Total investido</span></div>'+
     '<div class="val">'+brl(tot)+'</div>'+
     '<div class="mu" style="font-size:.78rem">Separado do saldo do mês — não entra nas contas.</div>'+
-    graficoEvolucao(evolucaoMensal(mv.data||[]))+'</div>';
+    grafico+'</div>';
   h+="<h2>Aplicações</h2>";
   h+=ativos.length?ativos.map(cardAplicacao).join(""):'<div class="lista"><div class="vazio">Nenhuma aplicação ainda.</div></div>';
   h+='<div style="height:12px"></div><button class="btn sec" id="gNova">Nova aplicação</button>';
@@ -58,22 +63,32 @@ export async function telaGuardado(){
     sheetAplicacao(todos.find(i=>i.id===b.dataset.inv)));
   $("#gNova").onclick=sheetNovaAplicacao;
 
-  const cap=$("#guardGrafCap");
-  $("#t-guardado").querySelectorAll(".linhaG circle").forEach(c=>c.onclick=()=>{
-    $("#t-guardado").querySelectorAll(".linhaG circle").forEach(o=>o.classList.toggle("sel",o===c));
-    if(cap) cap.textContent=mesLabel(c.dataset.mes)+": "+brl(+c.dataset.v)+" investidos.";
-  });
+  const cap=$("#guardGrafCap"), pts=[...$("#t-guardado").querySelectorAll(".linhaG .pt")];
+  const marcar=c=>{
+    pts.forEach(o=>o.classList.toggle("sel",o===c));
+    if(cap) cap.textContent=c.dataset.rot+": "+brl(+c.dataset.v)+" investidos.";
+  };
+  pts.forEach(c=>c.onclick=()=>marcar(c));
+  if(pts.length) marcar(pts[pts.length-1]);
 }
 
-/* soma todos os movimentos (de todas as aplicações) e devolve o saldo acumulado ao fim de cada mês */
-function evolucaoMensal(movs){
-  let acc=0; const porMes={};
+/* saldo acumulado dos movimentos, sempre partindo de zero.
+   Com menos de 2 meses de histórico, um ponto por dia com movimento; depois, um por mês. */
+function evolucao(movs){
+  if(!movs.length) return [];
+  const diario=new Set(movs.map(m=>m.data.slice(0,7))).size<2;
+  const chave=d=>diario?d:d.slice(0,7);
+  let acc=0; const porChave={};
   movs.forEach(m=>{
-    const sinal=m.tipo==="resgate"?-1:1;
-    acc+=sinal*Number(m.valor);
-    porMes[m.data.slice(0,7)]=acc;
+    acc+=(m.tipo==="resgate"?-1:1)*Number(m.valor);
+    porChave[chave(m.data)]=acc;
   });
-  return Object.keys(porMes).sort().map(mes=>({mes,saldo:porMes[mes]}));
+  const pontos=Object.keys(porChave).sort().map(k=>({k,saldo:porChave[k]}));
+  /* ponto zero: véspera do primeiro movimento (diário) ou mês anterior (mensal) */
+  const p=movs[0].data.split("-").map(Number);
+  const ini=diario?new Date(Date.UTC(p[0],p[1]-1,p[2]-1)):new Date(Date.UTC(p[0],p[1]-2,1));
+  pontos.unshift({k:chave(ini.toISOString().slice(0,10)),saldo:0});
+  return pontos.map(x=>({...x,rot:diario?x.k.slice(8,10)+"/"+x.k.slice(5,7)+"/"+x.k.slice(2,4):mesLabel(x.k)}));
 }
 
 function graficoEvolucao(pontos){
@@ -83,14 +98,23 @@ function graficoEvolucao(pontos){
   const vals=pontos.map(p=>p.saldo);
   const min=Math.min(0,...vals), max=Math.max(1,...vals);
   const range=(max-min)||1, n=pontos.length;
-  const xs=pontos.map((_,idx)=>n>1?pad+idx*(W-2*pad)/(n-1):W/2);
+  const xs=pontos.map((_,idx)=>pad+idx*(W-2*pad)/(n-1));
   const ys=pontos.map(p=>H-pad-((p.saldo-min)/range)*(H-2*pad));
-  const linha=xs.map((x,idx)=>x.toFixed(1)+","+ys[idx].toFixed(1)).join(" ");
-  const pontosSvg=pontos.map((p,idx)=>
-    '<circle data-mes="'+p.mes+'" data-v="'+p.saldo+'" cx="'+xs[idx].toFixed(1)+'" cy="'+ys[idx].toFixed(1)+'" r="3.6"></circle>').join("");
+  const f=v=>v.toFixed(1);
+  const linha=xs.map((x,idx)=>f(x)+","+f(ys[idx])).join(" ");
+  const base=f(H-pad-((0-min)/range)*(H-2*pad));
+  const area=f(xs[0])+","+base+" "+linha+" "+f(xs[n-1])+","+base;
+  /* o SVG é esticado na largura; os pontos são traços de comprimento zero com ponta redonda
+     e espessura fixa em pixels, então continuam redondos em qualquer largura */
+  const pontosSvg=pontos.map((p,idx)=>{
+    const d='M'+f(xs[idx])+" "+f(ys[idx])+"h0";
+    return '<g class="pt" data-rot="'+p.rot+'" data-v="'+p.saldo+'">'+
+      '<path class="alvo" d="'+d+'"/><path class="aro" d="'+d+'"/><path class="miolo" d="'+d+'"/></g>';
+  }).join("");
   return '<svg class="linhaG" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
-    (n>1?'<polyline points="'+linha+'"></polyline>':"")+pontosSvg+'</svg>'+
-    '<div class="grafCap" id="guardGrafCap">Toque num ponto para ver o mês.</div>';
+    '<polygon class="area" points="'+area+'"></polygon><polyline points="'+linha+'"></polyline>'+
+    pontosSvg+'</svg>'+
+    '<div class="grafCap" id="guardGrafCap">Toque num ponto para ver o valor.</div>';
 }
 
 function cardAplicacao(i){

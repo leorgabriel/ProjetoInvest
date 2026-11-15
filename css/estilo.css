@@ -257,9 +257,15 @@ button.cat:active{background:var(--s2)}
 
 /* ===== Gráfico de evolução (Investido) ===== */
 .linhaG{width:100%;height:100px;display:block;margin-top:12px}
-.linhaG polyline{fill:none;stroke:var(--ac);stroke-width:2}
-.linhaG circle{fill:var(--s1);stroke:var(--ac);stroke-width:2;cursor:pointer}
-.linhaG circle.sel{fill:var(--ac)}
+.linhaG{overflow:visible}
+.linhaG polyline{fill:none;stroke:var(--ac);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.linhaG .area{fill:var(--ac);opacity:.14}
+.linhaG .pt{cursor:pointer}
+.linhaG .pt path{fill:none;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.linhaG .pt .alvo{stroke:transparent;stroke-width:26}
+.linhaG .pt .aro{stroke:var(--ac);stroke-width:10}
+.linhaG .pt .miolo{stroke:var(--s1);stroke-width:5}
+.linhaG .pt.sel .miolo{stroke:var(--ac)}
 
 /* ===== Indicadores ===== */
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
