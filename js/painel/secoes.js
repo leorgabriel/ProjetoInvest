@@ -1,5 +1,6 @@
 import {descreverPeriodo} from "./filtros.js";
 import {visao, lancamentos} from "./visao.js";
+import {fluxo} from "./fluxo.js";
 
 /* Cada seção recebe os dados (D), o elemento do conteúdo e rerender()
    (para redesenhar depois de um clique que muda o filtro cruzado). */
@@ -10,7 +11,7 @@ const provisoria=(t,etapa)=>(D,el)=>{
 
 export const SECOES={
   visao:       {nome:"Visão geral",          render:visao},
-  fluxo:       {nome:"Fluxo e compromissos", render:provisoria("Fluxo e compromissos","Etapa 5")},
+  fluxo:       {nome:"Fluxo e compromissos", render:fluxo},
   patrimonio:  {nome:"Patrimônio",           render:provisoria("Patrimônio","Etapa 6")},
   pessoas:     {nome:"Pessoas",              render:provisoria("Pessoas","Etapa 6")},
   lancamentos: {nome:"Lançamentos",          render:lancamentos}};

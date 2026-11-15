@@ -19,6 +19,7 @@ const CONSULTAS={
   entradas:      ()=>sb.from("entrada").select("*").order("competencia").order("id"),
   resumoMes:     ()=>sb.from("v_resumo_mes").select("*").order("competencia"),
   gastosCat:     ()=>sb.from("v_gastos_categoria").select("*").order("competencia").order("categoria_id",{nullsFirst:true}),
+  orcamento:     ()=>sb.from("orcamento").select("*").order("competencia").order("categoria_id"),
   comprometido:  ()=>sb.from("v_comprometido").select("*").order("competencia"),
   resumoCaixa:   ()=>sb.from("v_resumo_caixa").select("*").order("mes"),
   caixaAcum:     ()=>sb.from("v_caixa_acumulado").select("*").order("mes"),

@@ -71,6 +71,10 @@ body.painel{padding-bottom:0}
 .sw.mini{padding:0;font-size:.78rem;color:var(--mu);gap:8px}
 .sw.mini input{transform:scale(.8);transform-origin:right center}
 
+.cartao.c5{grid-column:span 5} .cartao.c7{grid-column:span 7}
+.resumoLinha{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.82rem;color:var(--mu);margin-bottom:10px}
+.resumoLinha b{color:var(--tx);font-weight:650}
+
 /* KPIs */
 .kpiRow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
 .kpiP{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;min-width:0}

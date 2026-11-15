@@ -1,23 +1,12 @@
 import {$, esc, brl} from "../util.js";
 import {F, X, periodo, periodoAnterior, rotuloMes, descreverPeriodo} from "./filtros.js";
-import {filtrarLanc, somar, valorDe, mesDe, mesesEntre} from "./dados.js";
+import {somar, valorDe, mesDe, mesesEntre} from "./dados.js";
 import {grafico, COR, brlCurto} from "./graficos.js";
 import {tabelaLancamentos} from "./tabela.js";
+import {catDe, pct, entradasAplicam, lancsDe, periodoEfetivo, chips, ligarChips, cliqueNoMes} from "./comum.js";
 
-const SEM_CAT="nula";
-const catDe=l=>l.categoria_id||SEM_CAT;
 let comparar=false;            // "comparar com ano anterior" no gráfico de evolução
 let rolarParaTabela=false;     // depois de um clique num gráfico, desce até a tabela
-
-/* Entradas (e por consequência saldo e poupança) só fazem sentido sem recorte de
-   categoria, conta ou pessoa: as entradas não pertencem a nenhum desses. */
-const entradasAplicam=()=>!F.categoria&&!F.conta&&!F.pessoa&&!X.categoria;
-
-/* lançamentos dos filtros globais + filtro cruzado (opcionalmente ignorando uma dimensão,
-   para o próprio gráfico que a define continuar mostrando todas as opções) */
-function lancsDe(D,p,{semCategoriaX=false}={}){
-  return filtrarLanc(D,F,p).filter(l=>semCategoriaX||!X.categoria||catDe(l)===X.categoria);
-}
 
 /* série mensal em competência, com a mesma regra do v_resumo_mes:
    bruto  -> entradas = entradas + parte rateada (a receber), gastos = valor
@@ -52,18 +41,19 @@ function totais(s){
 }
 
 /* variação contra o período anterior. bom = "subir é bom?" */
-function variacao(atual,antes,{bom=true,pp=false}={}){
+function variacao(atual,antes,{bom=true,pp=false,reais=false}={}){
   if(atual==null||antes==null) return "";
   let txt,dif;
   if(pp){ dif=(atual-antes)*100; if(Math.abs(dif)<0.05) return '<div class="var">= período anterior</div>';
     txt=Math.abs(dif).toLocaleString("pt-BR",{maximumFractionDigits:1})+" p.p."; }
+  else if(reais){ dif=atual-antes; if(Math.abs(dif)<0.005) return '<div class="var">= período anterior</div>';
+    txt=brl(Math.abs(dif)); }   // saldo: % não faz sentido perto de zero ou trocando de sinal
   else{ if(!antes) return '<div class="var mu">sem base no período anterior</div>';
     dif=(atual-antes)/Math.abs(antes); if(Math.abs(dif)<0.0005) return '<div class="var">= período anterior</div>';
     txt=Math.abs(dif*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%"; }
   const cls=(dif>0)===bom?"ok":"er";
   return '<div class="var"><span class="'+cls+'">'+(dif>0?"▲ ":"▼ ")+txt+'</span> vs período anterior</div>';
 }
-const pct=v=>v==null?"—":(v*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%";
 
 function cartaoKpi(titulo,valor,sub,vari){
   return '<div class="kpiP"><h3>'+titulo+'</h3><div class="big">'+valor+'</div>'+
@@ -81,27 +71,13 @@ function divergencias(D,s){
   return ruins.length;
 }
 
-/* chips do filtro cruzado */
-function chips(D){
-  const c=[];
-  if(X.mes) c.push(['mes',"Mês: "+rotuloMes(X.mes)]);
-  if(X.categoria){ const cat=D.categorias.find(k=>k.id===X.categoria);
-    c.push(['categoria',"Categoria: "+(cat?cat.nome:"Sem categoria")]); }
-  if(!c.length) return "";
-  return '<div class="chipsX"><span class="mu">Filtro dos gráficos:</span>'+c.map(x=>
-    '<button type="button" class="chip on" data-x="'+x[0]+'">'+esc(x[1])+' <b>×</b></button>').join("")+'</div>';
-}
-function ligarChips(el,rerender){
-  el.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{ X[b.dataset.x]=null; rerender(); });
-}
-
 const notaCaixa=()=>F.regime!=="caixa"?"":
   '<div class="nota">Regime de caixa: os indicadores e a evolução mostram o dinheiro que entrou e saiu no mês '+
   '(inclui débito; não usa categoria, conta, pessoa nem bruto/líquido). O treemap e a tabela seguem em competência.</div>';
 
 /* ======================= seção: visão geral ======================= */
 export function visao(D,el,rerender){
-  const p=periodo(), pe=X.mes?{de:X.mes,ate:X.mes}:p, ant=periodoAnterior(pe);
+  const p=periodo(), pe=periodoEfetivo(p), ant=periodoAnterior(pe);
   const sAtual=serie(D,pe), t=totais(sAtual), tA=totais(serie(D,ant)), semAnt=tA.vazio;
   const caixa=F.regime==="caixa", nDiv=divergencias(D,serie(D,p));
   const v=(a,b,o)=>semAnt?"":variacao(a,b,o);
@@ -120,7 +96,7 @@ export function visao(D,el,rerender){
       cartaoKpi(caixa?"Saiu":"Gastos",brl(t.gastos),caixa?"pago no período":(F.liquido?"líquidos":"brutos"),
         v(t.gastos,tA.gastos,{bom:false}))+
       cartaoKpi("Saldo",t.saldo==null?naoAplica:'<span class="'+(t.saldo<0?"er":"")+'">'+brl(t.saldo)+'</span>',
-        t.saldo==null?subNA:"",v(t.saldo,tA.saldo,{bom:true}))+
+        t.saldo==null?subNA:"",v(t.saldo,tA.saldo,{bom:true,reais:true}))+
       cartaoKpi("Taxa de poupança",t.taxa==null?naoAplica:pct(t.taxa),
         t.taxa==null?(t.entradas==null?subNA:"sem entradas"):"saldo ÷ entradas",
         v(t.taxa,tA.taxa,{bom:true,pp:true}))+
@@ -176,19 +152,8 @@ function graficoEvolucao(D,p,rerender){
     dataZoom:muitos?[{type:"inside"},{type:"slider",height:16,bottom:6,borderColor:COR.bd,
       fillerColor:"#7C5CFF33",handleStyle:{color:COR.mu},textStyle:{color:COR.mu},dataBackground:{lineStyle:{color:COR.bd},areaStyle:{color:COR.s2}}}]
       :[{type:"inside"}],
-    series}).then(g=>{
-      if(!g) return;
-      // a coluna inteira do mês é clicável, não só a barra
-      g.getZr().on("click",ev=>{
-        if(!g.containPixel("grid",[ev.offsetX,ev.offsetY])) return;
-        const i=Math.round(g.convertFromPixel({gridIndex:0},[ev.offsetX,ev.offsetY])[0]);
-        if(!s[i]) return;
-        const k=s[i].mes; X.mes=X.mes===k?null:k; rolarParaTabela=true; rerender();
-      });
-      g.getZr().on("mousemove",ev=>{
-        g.getZr().setCursorStyle(g.containPixel("grid",[ev.offsetX,ev.offsetY])?"pointer":"default");
-      });
-    });
+    series}).then(g=>cliqueNoMes(g,s.map(x=>x.mes),k=>{   // a coluna inteira do mês é clicável
+      X.mes=X.mes===k?null:k; rolarParaTabela=true; rerender(); }));
 }
 
 function graficoCategorias(D,pe,rerender){
@@ -217,7 +182,7 @@ function graficoCategorias(D,pe,rerender){
 
 /* ======================= seção: lançamentos ======================= */
 export function lancamentos(D,el,rerender){
-  const p=periodo(), pe=X.mes?{de:X.mes,ate:X.mes}:p;
+  const p=periodo(), pe=periodoEfetivo(p);
   el.innerHTML='<div class="pTitulo"><h1>Lançamentos</h1><span class="mu">'+
       (X.mes?rotuloMes(X.mes):descreverPeriodo())+'</span></div>'+chips(D)+
     '<div class="cartao"><div id="tabL"></div></div>';
