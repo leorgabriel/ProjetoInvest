@@ -250,7 +250,7 @@ export function sheetNovoLancamento(){
   let modo="avista";
   const bg=sheet("Novo lançamento",
     '<div class="chips" id="nmModo" style="margin-bottom:14px">'+
-      [["avista","À vista"],["parcelado","Parcelado"]].map((m,i)=>
+      [["avista","À vista"],["parcelado","Parcelado"],["fixo","Conta fixa"]].map((m,i)=>
       '<button type="button" class="chip'+(i===0?" on":"")+'" data-m="'+m[0]+'">'+m[1]+"</button>").join("")+'</div>'+
     '<label class="campo"><span>Descrição</span><input class="inp" id="nDesc" placeholder="Supermercado, assinatura…"></label>'+
     '<div class="linha2"><label class="campo"><span id="nValorLabel">Valor</span>'+
@@ -286,7 +286,8 @@ export function sheetNovoLancamento(){
   }
   bg.querySelector("#nValor").addEventListener("input",atualizarResumoParc);
   function pintaExtra(){
-    bg.querySelector("#nValorLabel").textContent=modo==="parcelado"?"Valor total da compra":"Valor";
+    bg.querySelector("#nValorLabel").textContent=
+      modo==="parcelado"?"Valor total da compra":modo==="fixo"?"Valor por mês":"Valor";
     if(modo==="parcelado"){
       extra.innerHTML='<div class="linha2"><label class="campo"><span>Parcelas</span>'+
         '<input class="inp" type="number" min="1" max="60" id="nTot" value="2"></label>'+
@@ -295,19 +296,29 @@ export function sheetNovoLancamento(){
         '<label class="sw">Lançar as próximas parcelas nos meses seguintes<input type="checkbox" id="nRep" checked></label>';
       extra.querySelector("#nTot").addEventListener("input",atualizarResumoParc);
     } else if(modo==="fixo"){
-      extra.innerHTML='<div class="linha2"><label class="campo"><span>Vence no dia</span>'+
+      extra.innerHTML='<div class="linha2"><label class="campo"><span>Primeiro mês</span>'+
+        '<input class="inp" type="month" id="nIni" value="'+comp().slice(0,7)+'"></label>'+
+        '<label class="campo"><span>Repetir por (meses)</span>'+
+        '<input class="inp" type="number" min="1" max="120" id="nMeses" placeholder="sem fim"></label></div>'+
+        '<label class="campo"><span>Vence no dia (opcional)</span>'+
         '<input class="inp" type="number" min="1" max="31" id="nVenc" placeholder="—"></label>'+
-        '<label class="campo"><span>Até quando (opcional)</span><input class="inp" type="month" id="nFim"></label></div>'+
-        '<label class="sw">Tem prazo definido (parcelas)<input type="checkbox" id="nTemPrazo"></label>'+
-        '<div id="nParcBox" class="hide"><div class="linha2">'+
-          '<label class="campo"><span>Parcela atual (em '+MESES[S.mes]+"/"+S.ano+')</span>'+
-          '<input class="inp" type="number" min="1" id="nParcAtual" value="1"></label>'+
-          '<label class="campo"><span>Total de parcelas</span><input class="inp" type="number" min="1" id="nParcTotal"></label>'+
-        '</div></div>'+
-        '<div class="mu" style="font-size:.76rem;margin:4px 0 0">Lançada automaticamente todo mês a partir de '+
-        MESES[S.mes]+" de "+S.ano+', até ser desativada, até o mês final ou até acabar as parcelas.</div>';
-      extra.querySelector("#nTemPrazo").onchange=ev=>
-        extra.querySelector("#nParcBox").classList.toggle("hide",!ev.target.checked);
+        '<div class="mu" id="nResumoFixo" style="font-size:.78rem;line-height:1.5;margin:-2px 0 0"></div>';
+      const resumo=()=>{
+        const ini=extra.querySelector("#nIni").value, n=parseInt(extra.querySelector("#nMeses").value,10);
+        const el=extra.querySelector("#nResumoFixo");
+        if(!ini){ el.textContent=""; return; }
+        const [a,m]=ini.split("-").map(Number), rot=(y,mm)=>MESES[mm].slice(0,3).toLowerCase()+"/"+String(y).slice(2);
+        const hoje=mesCorrente().slice(0,7), retro=ini<hoje;
+        if(n>=1){
+          const f=new Date(a,m-1+n-1,1);
+          el.textContent="Lança "+n+(n>1?" meses":" mês")+", de "+rot(a,m-1)+" a "+rot(f.getFullYear(),f.getMonth())+
+            " (numerados 1/"+n+" a "+n+"/"+n+")."+(retro?" Os meses anteriores ao atual entram automaticamente.":"");
+        } else el.textContent="Sem fim: lança de "+rot(a,m-1)+(retro?" até o mês atual":"")+
+          " e continua todo mês até você desativar."+(retro?" Os meses anteriores ao atual entram automaticamente.":"");
+      };
+      extra.querySelector("#nIni").addEventListener("input",resumo);
+      extra.querySelector("#nMeses").addEventListener("input",resumo);
+      resumo();
     } else extra.innerHTML="";
   }
   pintaExtra(); atualizarResumoParc();
@@ -366,33 +377,32 @@ export function sheetNovoLancamento(){
     });
     if(invalido) return toast("Preencha o valor da divisão de cada pessoa.","e");
 
-    let parcAtualFixo=null, parcTotalFixo=null;
-    if(modo==="fixo" && bg.querySelector("#nTemPrazo").checked){
-      parcAtualFixo=parseInt(bg.querySelector("#nParcAtual").value,10);
-      parcTotalFixo=parseInt(bg.querySelector("#nParcTotal").value,10);
-      if(!parcAtualFixo||!parcTotalFixo||parcAtualFixo>parcTotalFixo)
-        return toast("Informe a parcela atual e o total de parcelas corretamente.","e");
+    let iniFixo=null, mesesFixo=null;
+    if(modo==="fixo"){
+      iniFixo=bg.querySelector("#nIni").value;
+      const mv=bg.querySelector("#nMeses").value.trim();
+      mesesFixo=mv?parseInt(mv,10):null;
+      if(!iniFixo) return toast("Informe o primeiro mês.","e");
+      if(mv && !(mesesFixo>=1 && mesesFixo<=120)) return toast("Repetir por: de 1 a 120 meses, ou vazio para sem fim.","e");
+      // conta fixa guarda a divisão em %: R$ vira % do valor mensal
+      if(rateios.some(r=>r.valor!=null && Math.abs(r.valor)>Math.abs(valor)))
+        return toast("A parte de alguém é maior que o valor mensal.","e");
     }
 
     btn.disabled=true; btn.textContent="Lançando…";
     try{
       if(modo==="fixo"){
-        const venc=parseInt(bg.querySelector("#nVenc").value,10)||null;
-        const fimStr=bg.querySelector("#nFim").value;
-        const {data:rec,error}=await sb.from("recorrencia").insert({
-          nome:desc,valor_padrao:valor,categoria_id:catId,conta_id:contaId,
-          dia_vencimento:venc,mes_inicio:comp(),mes_fim:fimStr?fimStr+"-01":null,
-          parcelas_total:parcTotalFixo,parcela_referencia:parcAtualFixo,
-          competencia_referencia:parcAtualFixo?comp():null
-        }).select().single();
+        const {data,error}=await sb.rpc("criar_conta_fixa",{p:{
+          nome:desc,valor,mes_inicio:iniFixo+"-01",meses:mesesFixo,
+          categoria_id:catId,conta_id:contaId,
+          dia_vencimento:parseInt(bg.querySelector("#nVenc").value,10)||null,
+          rateios:rateios.map(r=>({pessoa_id:r.pessoa_id,
+            percentual:r.percentual!=null?r.percentual:Math.round(Math.abs(r.valor/valor)*10000)/100}))
+        }});
         if(error) throw error;
-        if(rateios.length){
-          const {error:e2}=await sb.from("recorrencia_rateio").insert(
-            rateios.map(r=>({recorrencia_id:rec.id,pessoa_id:r.pessoa_id,
-              percentual:r.percentual!=null?r.percentual:Math.round(r.valor/valor*10000)/100})));
-          if(e2) throw e2;
-        }
-        await sb.rpc("preparar_mes",{p_competencia:comp()});
+        fechar(); toast("Conta fixa criada: "+data.lancamentos+(data.lancamentos>1?" meses lançados.":" mês lançado.")+
+          (data.sem_fim?" Os próximos entram sozinhos.":"")); carregar();
+        return;
       } else {
         const {data,error}=await sb.rpc("novo_lancamento",{p:{
           modo,competencia:comp(),descricao:desc,valor,
