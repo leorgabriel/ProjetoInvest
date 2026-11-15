@@ -109,7 +109,7 @@ export async function telaDebito(){
       'Cadastre uma em Ajustes, com espécie <b>Débito</b>, e escolha ela como forma de pagamento ao lançar.'+
       '<div style="height:12px"></div><button class="btn sec" id="dCad">Ir para Ajustes</button></div></div>';
   } else if(!lanc.length){
-    h+='<div class="lista"><div class="vazio">Nenhum gasto no débito em '+MESES[S.mes]+'.</div></div>';
+    h+='<div class="lista"><div class="vazio">Nenhuma movimentação no débito em'+MESES[S.mes]+'.</div></div>';
   } else {
     h+='<div class="lista">'+lanc.map(x=>linha(x,true)).join("")+'</div>';
   }
