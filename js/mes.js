@@ -122,7 +122,7 @@ export async function telaMes(){
     if(!g.length) return;
     const s=g.reduce((a,x)=>a+Number(x.valor),0);
     h+=subsecao("lanc-"+k,rot+' <i>'+g.length+'</i>','<b>'+brl(s)+'</b>',
-      '<div class="lista">'+g.map(linha).join("")+'</div>');
+      '<div class="lista">'+g.map(x=>linha(x)).join("")+'</div>');
   });
 
   if(gc.data?.length){
@@ -190,7 +190,7 @@ export function linha(x,deb){
     '<button class="item" data-id="'+x.id+'"><span class="dot" style="background:'+
     (x.categoria_cor||"#555")+'"></span><span class="ct"><span class="nm">'+esc(x.descricao)+bd+mes+
     '</span><span class="mt">'+esc(meta||"sem tipo")+'</span></span>'+
-    (deb // débito: entrada +verde, saída vermelha
+    (deb===true // débito: entrada +verde, saída vermelha (=== evita o índice do .map)
       ?'<span class="vl '+(x.valor<0?"ok":"er")+'">'+(x.valor<0?"+":"")+brl(Math.abs(x.valor))+'</span>'
       :'<span class="vl'+(x.valor<0?" ok":"")+'">'+brl(x.valor)+'</span>')+'</button></div>';
 }
