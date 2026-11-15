@@ -3,6 +3,7 @@ import {F, X, periodo, periodoAnterior, rotuloMes, descreverPeriodo} from "./fil
 import {somar, valorDe, mesDe, mesesEntre} from "./dados.js";
 import {grafico, COR, brlCurto} from "./graficos.js";
 import {tabelaLancamentos} from "./tabela.js";
+import {foraDoPadrao, JANELA_MESES, MIN_BASE} from "./anomalias.js";
 import {catDe, pct, entradasAplicam, lancsDe, periodoEfetivo, chips, ligarChips, cliqueNoMes} from "./comum.js";
 
 let comparar=false;            // "comparar com ano anterior" no gráfico de evolução
@@ -119,7 +120,7 @@ export function visao(D,el,rerender){
 
   graficoEvolucao(D,p,rerender);
   graficoCategorias(D,pe,rerender);
-  tabelaLancamentos($("#tabV"),lancsDe(D,pe));
+  tabelaLancamentos($("#tabV"),lancsDe(D,pe),{anomalias:foraDoPadrao(D,F),arquivo:nomeCsv(pe)});
 
   if(rolarParaTabela){ rolarParaTabela=false; $("#cTab").scrollIntoView({behavior:"smooth",block:"start"}); }
 }
@@ -180,12 +181,19 @@ function graficoCategorias(D,pe,rerender){
       X.categoria=X.categoria===id?null:id; rolarParaTabela=true; rerender(); });
 }
 
+const nomeCsv=pe=>"lancamentos_"+pe.de+(pe.ate!==pe.de?"_a_"+pe.ate:"")+".csv";
+
 /* ======================= seção: lançamentos ======================= */
 export function lancamentos(D,el,rerender){
-  const p=periodo(), pe=periodoEfetivo(p);
+  const p=periodo(), pe=periodoEfetivo(p), anom=foraDoPadrao(D,F), lancs=lancsDe(D,pe);
+  const n=lancs.filter(l=>anom.has(l.id)).length;
   el.innerHTML='<div class="pTitulo"><h1>Lançamentos</h1><span class="mu">'+
       (X.mes?rotuloMes(X.mes):descreverPeriodo())+'</span></div>'+chips(D)+
+    '<div class="nota">'+(n?'<b>'+n+'</b> lançamento'+(n>1?"s":"")+' fora do padrão no filtro. ':'Nenhum lançamento fora do padrão no filtro. ')+
+      'Critério: acima da média + 2 desvios-padrão da categoria, com base nos '+JANELA_MESES+' meses anteriores ao '+
+      'lançamento; só categorias com pelo menos '+MIN_BASE+' lançamentos nessa janela. Valor '+(F.liquido?"líquido":"bruto")+
+      ', conforme o filtro.</div>'+
     '<div class="cartao"><div id="tabL"></div></div>';
   ligarChips(el,rerender);
-  tabelaLancamentos($("#tabL"),lancsDe(D,pe),{porPagina:50});
+  tabelaLancamentos($("#tabL"),lancs,{porPagina:50,anomalias:anom,arquivo:nomeCsv(pe)});
 }

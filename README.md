@@ -53,7 +53,8 @@ pessoa num gasto dividido, em percentual ou em valor.
 - Acompanhamento de investimentos, separado do saldo corrente
 - Painel para computador (`painel.html`) com filtros globais, indicadores com variação,
   evolução mensal, gastos por categoria, filtro cruzado pelos gráficos, tabela de lançamentos,
-  fluxo do dinheiro, realizado × orçamento (ou média), comprometimento futuro e calendário de gastos
+  fluxo do dinheiro, realizado × orçamento (ou média), comprometimento futuro e calendário de gastos,
+  destaque de gastos fora do padrão e exportação dos lançamentos em CSV
 
 ## Estrutura
 
@@ -82,7 +83,9 @@ js/painel/fluxo.js     seção Fluxo e compromissos (sankey, categorias no tempo
                        comprometido nos próximos 24 meses, calendário de gastos)
 js/painel/comum.js     peças compartilhadas entre seções (filtro cruzado, recortes de lançamentos)
 js/painel/graficos.js  ECharts (CDN, versão fixa, carregado sob demanda) e cores dos gráficos
-js/painel/tabela.js    tabela de lançamentos (ordenação, busca, paginação)
+js/painel/tabela.js    tabela de lançamentos (ordenação, busca, paginação, exportar CSV)
+js/painel/anomalias.js gastos fora do padrão (acima de média + 2 desvios da categoria nos 12 meses anteriores)
+js/painel/exportar.js  CSV para o Excel em português (; e vírgula decimal, sem biblioteca)
 manifest.webmanifest   manifesto do PWA
 icons/                 ícone do app
 backup/                exportações diárias do banco, em JSON

@@ -109,3 +109,9 @@ body.painel{padding-bottom:0}
 
 /* toast no canto, não esticado na largura toda */
 body.painel #toast{left:auto;right:24px;bottom:24px;max-width:420px}
+
+/* 6.3 fora do padrão e 6.5 exportação */
+.tabTopo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.tabTopo .inp{flex:1 1 260px}
+.tabTopo .exportar{margin-left:auto;padding:8px 14px;font-size:.8rem}
+.bdg.anom{background:#3a2a0c;color:var(--wr);cursor:help}
