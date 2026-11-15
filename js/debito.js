@@ -1,6 +1,6 @@
 import {sb} from "./supabase-client.js";
 import {MESES, S} from "./estado.js";
-import {$, esc, brl, comp, mesCorrente, hojeISO, toast, erro, sheet, fechar} from "./util.js";
+import {$, esc, brl, comp, mesCorrente, hojeISO, num, toast, erro, sheet, fechar} from "./util.js";
 import {telaMes, linha, ligarSwipe, sheetItem, confirmarExclusao, formHTML, formEventos} from "./mes.js";
 import {abrir} from "./nav.js";
 
@@ -29,12 +29,13 @@ export async function telaDebito(){
   const c=comp(), alvo=$("#t-mes"), caixa=S.regime==="caixa";
   const temConta=(S.cad?.todasContas||[]).some(x=>ehDebito(x.especie));
 
-  const [l,cx,pend]=await Promise.all([
+  const [l,cx,pend,ac]=await Promise.all([
     sb.from("v_lancamento").select("*").eq("competencia",c).in("conta_especie",SEM_FATURA)
       .order("data_compra",{ascending:false,nullsFirst:false}).order("criado_em",{ascending:false}),
     sb.from("v_resumo_caixa").select("*").eq("mes",c).maybeSingle(),
     sb.from("v_gastos_conta").select("*").lte("competencia",c).not("especie","in","(debito,dinheiro)")
-      .or("pago.is.null,pago.eq.false")
+      .or("pago.is.null,pago.eq.false"),
+    sb.from("v_caixa_acumulado").select("*").order("mes")
   ]);
   if(l.error) return erro(l.error);
   if(cx.error) return erro(cx.error);
@@ -58,12 +59,21 @@ export async function telaDebito(){
       '<div class="mu nota">Competência: gasto no débito cai no mês da compra e já está somado no saldo da tela Mês.</div></div>';
   } else {
     const entrou=v0(X.entradas_recebidas)+v0(X.rateios_recebidos);
-    h+='<div class="hero"><div class="lbl"><span>Caixa de '+MESES[S.mes]+'</span>'+seg+'</div>'+
-      '<div class="val '+(v0(X.saldo_caixa)<0?"er":"")+'">'+brl(X.saldo_caixa)+'</div><div class="duo">'+
-      '<div><small>Entrou</small><b class="ok">'+brl(entrou)+'</b></div>'+
-      '<div><small>Saiu</small><b>'+brl(X.saidas_total)+'</b></div></div>'+
-      '<div class="mu nota">Caixa: só o que foi marcado como pago ou recebido, no mês em que saiu ou entrou. '+
-      'Faturas e entradas até out/26 foram marcadas como pagas no último dia do mês delas.</div></div>';
+    const A=ac.data||[], ini=A[0]?.inicio||"2026-11-01", s0=v0(A[0]?.saldo_inicial);
+    const linhaA=A.find(x=>x.mes===c), antes=c<ini;
+    const cart=antes?null:(linhaA?v0(linhaA.acumulado):(A.length?v0(A[A.length-1].acumulado):s0));
+    const fluxo=v0(X.saldo_caixa);
+    h+='<div class="hero"><div class="lbl"><span>Carteira ao fim de '+MESES[S.mes]+'</span>'+seg+'</div>'+
+      (antes
+        ?'<div class="val mu">—</div><div class="mu nota" style="margin:-6px 0 12px">Antes do início da carteira ('+
+          mesCurto(ini)+'). Resultado do mês: <b style="color:var(--tx);white-space:nowrap">'+brl(fluxo)+'</b></div>'
+        :'<div class="val '+(cart<0?"er":"")+'">'+brl(cart)+'</div>')+
+      '<div class="duo">'+
+      '<div><small>Entrou no mês</small><b class="ok">'+brl(entrou)+'</b></div>'+
+      '<div><small>Saiu no mês</small><b>'+brl(X.saidas_total)+'</b></div></div>'+
+      '<div class="mu nota">Começa em '+brl(s0)+' em '+mesCurto(ini)+' e soma, mês a mês, só o que foi marcado '+
+      'como pago ou recebido, na data em que saiu ou entrou. '+
+      '<button class="lnk" id="dIni">Mudar início</button></div></div>';
   }
 
   if(caixa && abertas.length){
@@ -108,6 +118,30 @@ export async function telaDebito(){
   ligarSwipe(alvo,id=>formEventos(sheet("Editar",formHTML(acha(id))),acha(id)),id=>confirmarExclusao(acha(id)));
   const bc=alvo.querySelector("#dCad"); if(bc) bc.onclick=()=>abrir("cadastros");
   const bl=alvo.querySelector("#dLote"); if(bl) bl.onclick=()=>sheetLote(abertas);
+  const bi=alvo.querySelector("#dIni"); if(bi) bi.onclick=()=>sheetInicio(ac.data?.[0]);
+}
+
+/* marco zero da carteira */
+function sheetInicio(a){
+  const ini=(a?.inicio||"2026-11-01").slice(0,7), s0=v0(a?.saldo_inicial);
+  const bg=sheet("Início da carteira",
+    '<div class="mu" style="margin:-6px 0 14px;font-size:.82rem;line-height:1.5">A carteira parte deste mês com o '+
+    'saldo informado e soma o que entrou e saiu de cada mês seguinte. Use 0 para começar do zero.</div>'+
+    '<div class="linha2"><label class="campo"><span>A partir de</span><input class="inp" type="month" id="iMes" value="'+ini+'"></label>'+
+    '<label class="campo"><span>Saldo inicial</span><input class="inp" id="iSaldo" inputmode="decimal" value="'+
+    s0.toFixed(2).replace(".",",")+'"></label></div>'+
+    '<div style="height:14px"></div><button class="btn" id="iOk">Salvar</button>');
+  bg.querySelector("#iOk").onclick=async e=>{
+    const mes=bg.querySelector("#iMes").value, v=num(bg.querySelector("#iSaldo").value);
+    if(!mes) return toast("Escolha o mês de início.","e");
+    if(isNaN(v)) return toast("Informe o saldo inicial (pode ser 0).","e");
+    const btn=e.currentTarget; btn.disabled=true; btn.textContent="Salvando…";
+    const {error}=await sb.from("config_usuario").upsert({caixa_inicio:mes+"-01",caixa_saldo_inicial:v,
+      atualizado_em:new Date().toISOString()},{onConflict:"user_id"});
+    btn.disabled=false; btn.textContent="Salvar";
+    if(error) return erro(error);
+    fechar(); toast("Início da carteira salvo."); telaDebito();
+  };
 }
 
 /* marcar faturas em aberto em lote */

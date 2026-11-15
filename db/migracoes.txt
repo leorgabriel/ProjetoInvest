@@ -70,3 +70,12 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                convite). gerar_fixos_do_mes mantida: preparar_mes é invoker e
                                                a chama. search_path fixo em 5 funções. Revoke de grants em
                                                app_html, app_html_versao, staging_planilha.
+(sem migração)                            2026-11-15  parcela 2 de whey, bolsa iaia, insulfilm, presente math e
+                                               tapete polo recriada em mai/26 (a duplicata em abr/26 foi
+                                               excluída pelo app); criado_em original, fora do sync
+43_faturas_outubro_pagas_09_11            2026-11-15  as 5 faturas de out/26 pagas sem data (cartões e empréstimo,
+                                               R$ 6.674,12) passam a data_pagamento 09/11, junto com o salário;
+                                               o caixa entra em novembro com -R$ 57,58
+44_caixa_acumulado                        2026-11-15  config_usuario (RLS) com marco zero e saldo inicial da carteira
+                                               (padrão nov/26, R$ 0) e v_caixa_acumulado (security_invoker):
+                                               saldo inicial + soma do fluxo de caixa mês a mês
