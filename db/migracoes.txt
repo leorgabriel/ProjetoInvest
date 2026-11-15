@@ -88,3 +88,7 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                (saída idêntica, conferida mês a mês). Carteira acumulada só
                                                soma competência >= início: o saldo inicial já cobre o que é
                                                de antes, que aparece à parte como fluxo_fora
+48_tela_mes_sem_debito                    2026-11-15  v_resumo_mes, v_gastos_categoria, v_gastos_conta e
+                                               v_comprometido excluem débito/dinheiro: a tela Mês (e Ano)
+                                               não mostra nem soma débito, que fica só em Débito e caixa.
+                                               Único efeito: nov/26 sem os 2 lançamentos de teste (-44,47)

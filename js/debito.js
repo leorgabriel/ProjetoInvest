@@ -40,7 +40,6 @@ export async function telaDebito(){
   if(l.error) return erro(l.error);
   if(cx.error) return erro(cx.error);
   const lanc=l.data||[];
-  const totDeb=lanc.reduce((s,x)=>s+v0(x.valor),0);
   const X=cx.data||{};
   const abertas=(pend.data||[]).filter(x=>Math.abs(v0(x.valor))>0.004);
   const totAbertas=abertas.reduce((s,x)=>s+v0(x.valor),0);
@@ -50,13 +49,15 @@ export async function telaDebito(){
   let h=segVisao();
 
   if(!caixa){
-    const atual=c===mesCorrente();
-    const dias=atual?new Date().getDate():new Date(+c.slice(0,4),+c.slice(5,7),0).getDate();
+    const ent=-lanc.filter(x=>v0(x.valor)<0).reduce((s,x)=>s+v0(x.valor),0);
+    const sai=lanc.filter(x=>v0(x.valor)>0).reduce((s,x)=>s+v0(x.valor),0);
+    const res=ent-sai;
     h+='<div class="hero"><div class="lbl"><span>Débito de '+MESES[S.mes]+'</span>'+seg+'</div>'+
-      '<div class="val">'+brl(totDeb)+'</div><div class="duo">'+
-      '<div><small>Lançamentos</small><b>'+lanc.length+'</b></div>'+
-      '<div><small>Média por dia'+(atual?" até hoje":"")+'</small><b>'+(lanc.length?brl(totDeb/dias):"—")+'</b></div></div>'+
-      '<div class="mu nota">Competência: gasto no débito cai no mês da compra e já está somado no saldo da tela Mês.</div></div>';
+      '<div class="val '+(res<0?"er":res>0?"ok":"")+'">'+(res>0?"+":"")+brl(res)+'</div><div class="duo">'+
+      '<div><small>Entradas</small><b class="ok">+'+brl(ent)+'</b></div>'+
+      '<div><small>Saídas</small><b class="er">'+brl(sai)+'</b></div></div>'+
+      '<div class="mu nota">Competência: '+lanc.length+(lanc.length===1?" lançamento":" lançamentos")+
+      ' no débito com data em '+MESES[S.mes]+'. Eles não entram na tela Mês, que mostra cartões, boletos e contas.</div></div>';
   } else {
     const entrou=v0(X.entradas_recebidas)+v0(X.rateios_recebidos)+v0(X.entrada_debito);
     const A=ac.data||[], ini=A[0]?.inicio||"2026-11-01", s0=v0(A[0]?.saldo_inicial);
@@ -102,7 +103,7 @@ export async function telaDebito(){
           'Marque faturas como pagas e entradas como recebidas na tela Mês.</div>')+'</div>';
   }
 
-  h+='<h2>Gastos no débito</h2>';
+  h+='<h2>Movimentações no débito</h2>';
   if(!temConta){
     h+='<div class="lista"><div class="vazio">Você ainda não tem uma conta de débito.<br>'+
       'Cadastre uma em Ajustes, com espécie <b>Débito</b>, e escolha ela como forma de pagamento ao lançar.'+
@@ -110,7 +111,7 @@ export async function telaDebito(){
   } else if(!lanc.length){
     h+='<div class="lista"><div class="vazio">Nenhum gasto no débito em '+MESES[S.mes]+'.</div></div>';
   } else {
-    h+='<div class="lista">'+lanc.map(linha).join("")+'</div>';
+    h+='<div class="lista">'+lanc.map(x=>linha(x,true)).join("")+'</div>';
   }
   h+='<div style="height:30px"></div>';
   alvo.innerHTML=h;

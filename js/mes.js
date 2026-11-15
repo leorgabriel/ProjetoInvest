@@ -29,8 +29,9 @@ export async function telaMes(){
   }
   if(S.visaoMes==="debito") return telaDebito();
   const limpo=!S.busca && !S.noAno;
-  let q=sb.from("v_lancamento").select("*").order("data_compra",{ascending:false,nullsFirst:false})
-       .order("criado_em",{ascending:false});
+  // débito e dinheiro ficam só na sub-aba Débito e caixa
+  let q=sb.from("v_lancamento").select("*").or("conta_especie.is.null,conta_especie.not.in.(debito,dinheiro)")
+       .order("data_compra",{ascending:false,nullsFirst:false}).order("criado_em",{ascending:false});
   if(S.noAno) q=q.gte("competencia",S.ano+"-01-01").lte("competencia",S.ano+"-12-01");
   else q=q.eq("competencia",c);
   if(S.busca) q=q.ilike("descricao","%"+S.busca+"%");
@@ -46,6 +47,7 @@ export async function telaMes(){
   ]);
   if(l.error) return erro(l.error);
   const R=r.data||{gastos_bruto:0,gastos_liquido:0,entradas_total:0,entradas_fixas:0,saldo:0,a_receber:0};
+  if(pe.data) pe.data=pe.data.filter(x=>!["debito","dinheiro"].includes(x.conta_especie));
   const lanc=l.data||[], gasto=S.liquido?R.gastos_liquido:R.gastos_bruto;
   const entrada=S.liquido?R.entradas_fixas:R.entradas_total;
 
@@ -176,7 +178,7 @@ export async function telaMes(){
   if(S.busca){qb.focus();qb.setSelectionRange(qb.value.length,qb.value.length);}
 }
 
-export function linha(x){
+export function linha(x,deb){
   const meta=[x.data_compra?x.data_compra.slice(8,10)+"/"+x.data_compra.slice(5,7):"",
               x.conta_nome].filter(Boolean).join(" · ");
   const bd=x.parcela_num?'<span class="bdg">'+x.parcela_num+(x.parcelas_total?"/"+x.parcelas_total:"")+"</span>":
@@ -188,7 +190,9 @@ export function linha(x){
     '<button class="item" data-id="'+x.id+'"><span class="dot" style="background:'+
     (x.categoria_cor||"#555")+'"></span><span class="ct"><span class="nm">'+esc(x.descricao)+bd+mes+
     '</span><span class="mt">'+esc(meta||"sem tipo")+'</span></span>'+
-    '<span class="vl'+(x.valor<0?" ok":"")+'">'+brl(x.valor)+'</span></button></div>';
+    (deb // débito: entrada +verde, saída vermelha
+      ?'<span class="vl '+(x.valor<0?"ok":"er")+'">'+(x.valor<0?"+":"")+brl(Math.abs(x.valor))+'</span>'
+      :'<span class="vl'+(x.valor<0?" ok":"")+'">'+brl(x.valor)+'</span>')+'</button></div>';
 }
 
 /* deslizar para editar ou excluir */
