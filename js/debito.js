@@ -67,12 +67,15 @@ export async function telaDebito(){
       (antes
         ?'<div class="val mu">—</div><div class="mu nota" style="margin:-6px 0 12px">Antes do início da carteira ('+
           mesCurto(ini)+'). Resultado do mês: <b style="color:var(--tx);white-space:nowrap">'+brl(fluxo)+'</b></div>'
-        :'<div class="val '+(cart<0?"er":"")+'">'+brl(cart)+'</div>')+
+        :'<div class="val '+(cart<0?"er":"")+'">'+brl(cart)+'</div>'+
+          (linhaA&&Math.abs(v0(linhaA.fluxo_fora))>0.004?'<div class="mu nota" style="margin:-6px 0 12px">'+
+            '<b style="color:var(--tx);white-space:nowrap">'+brl(linhaA.fluxo_fora)+'</b> pagos ou recebidos neste mês são de '+
+            'antes de '+mesCurto(ini)+' e já estão no saldo inicial, por isso não entram na carteira.</div>':''))+
       '<div class="duo">'+
       '<div><small>Entrou no mês</small><b class="ok">'+brl(entrou)+'</b></div>'+
       '<div><small>Saiu no mês</small><b>'+brl(X.saidas_total)+'</b></div></div>'+
-      '<div class="mu nota">Começa em '+brl(s0)+' em '+mesCurto(ini)+' e soma, mês a mês, só o que foi marcado '+
-      'como pago ou recebido, na data em que saiu ou entrou. '+
+      '<div class="mu nota">Começa em '+brl(s0)+' em '+mesCurto(ini)+' e soma, mês a mês, o que foi pago ou '+
+      'recebido de '+mesCurto(ini)+' em diante. '+
       '<button class="lnk" id="dIni">Mudar início</button></div></div>';
   }
 
