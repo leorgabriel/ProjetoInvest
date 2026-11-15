@@ -50,3 +50,23 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                nunca funcionava); reenvia só se o envio anterior falhar
 39_sync_planilha_valor_liquido            2026-11-14  sincronizar_planilha() envia valor_liquido (valor - rateio)
                                                em vez do valor cheio, igual ao saldo do app
+40_debito_e_resumo_caixa                  2026-11-15  sugerir_competencia(): débito/dinheiro sempre no mês da data,
+                                               mesmo com dia_fechamento preenchido. Nova v_resumo_caixa
+                                               (security_invoker) em regime de caixa estrito: débito na data,
+                                               demais quando a fatura (ou o lançamento sem fatura) está paga,
+                                               entradas e rateios na data de recebimento. Valores brutos.
+40b_sync_planilha_exclui_debito_dinheiro  2026-11-15  sincronizar_planilha() não seleciona lançamentos de contas
+                                               débito/dinheiro (filtro na seleção; cursor intocado)
+41_regulariza_pago_recebido_retroativo    2026-11-15  fatura/entrada/rateio com competência < 2026-11 marcados como
+                                               pagos/recebidos (só do Leonardo): 54 faturas, 37 entradas,
+                                               14 rateios. Data presumida = último dia da competência; datas
+                                               reais já existentes preservadas. v_resumo_mes inalterada.
+42a_v_investimento_security_invoker       2026-11-15  CORRIGE VAZAMENTO: v_investimento estava sem security_invoker
+                                               (perdido ao recriar nas 25/37) e expunha investimentos a
+                                               qualquer usuário logado. Toda view recriada deve reaplicar.
+42_endurece_seguranca                     2026-11-15  revoke de fazer_backup, sincronizar_planilha, versionar_app,
+                                               semear_categorias, bloquear_novas_contas (anon/authenticated) e
+                                               eh_admin (anon; authenticated mantém, usada na policy de
+                                               convite). gerar_fixos_do_mes mantida: preparar_mes é invoker e
+                                               a chama. search_path fixo em 5 funções. Revoke de grants em
+                                               app_html, app_html_versao, staging_planilha.
