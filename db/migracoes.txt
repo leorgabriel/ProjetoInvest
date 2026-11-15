@@ -96,3 +96,6 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                cursor): editar um lançamento já enviado duplicava a linha na
                                                planilha, que só acrescenta. Pula valor líquido zero (100%
                                                rateado), que o Apps Script recusava
+50_sync_planilha_100pct_valor_cheio       2026-11-15  substitui o pulo da 49: lançamento 100% rateado vai com o valor
+                                               cheio; rateio parcial continua indo com a parte do dono.
+                                               remedios iaia 1/2 e 2/2 enviados à mão (nov L46, dez L39)
