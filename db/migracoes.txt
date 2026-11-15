@@ -92,3 +92,7 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                v_comprometido excluem débito/dinheiro: a tela Mês (e Ano)
                                                não mostra nem soma débito, que fica só em Débito e caixa.
                                                Único efeito: nov/26 sem os 2 lançamentos de teste (-44,47)
+49_sync_planilha_so_novos_sem_zero        2026-11-15  sincronizar_planilha() envia só lançamentos novos (criado_em >
+                                               cursor): editar um lançamento já enviado duplicava a linha na
+                                               planilha, que só acrescenta. Pula valor líquido zero (100%
+                                               rateado), que o Apps Script recusava
