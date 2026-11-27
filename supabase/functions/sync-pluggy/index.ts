@@ -11,6 +11,19 @@ const CORS = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 
+// O Nubank data as parcelas 2+ como 00:00 (BRT) do último dia do mês anterior
+// à fatura (ex.: 2026-10-31T03:00:00.000Z para a fatura de novembro).
+// Essas vão para o dia 1 do mês seguinte; o original fica no payload.
+function dataFatura(t: any): string {
+  const raw = String(t.date), d = raw.slice(0, 10);
+  const n = t.creditCardMetadata?.installmentNumber;
+  if (!(n >= 2) || !raw.endsWith("T03:00:00.000Z")) return d;
+  const x = new Date(d + "T12:00:00Z");
+  const amanha = new Date(x.getTime() + 864e5);
+  if (amanha.getUTCDate() !== 1) return d;
+  return amanha.toISOString().slice(0, 10);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "metodo" }, 405);
@@ -56,7 +69,7 @@ Deno.serve(async (req) => {
             "&after=" + encodeURIComponent(cursor);
         const linhas = (j.results || j.data || []).map((t: any) => ({
           pluggy_id: t.id, user_id: DONO, conta_pluggy: c.id, conta_nome: c.name, conta_tipo: c.type,
-          data: String(t.date).slice(0, 10), descricao: t.description, valor: t.amount,
+          data: dataFatura(t), descricao: t.description, valor: t.amount,
           parcela_num: t.creditCardMetadata?.installmentNumber ?? null,
           parcelas_total: t.creditCardMetadata?.totalInstallments ?? null,
           status: t.status, categoria: t.category, payload: t, sincronizado_em: new Date().toISOString(),
