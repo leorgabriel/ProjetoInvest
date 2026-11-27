@@ -48,11 +48,12 @@ Deno.serve(async (req) => {
           (await r.text()).slice(0, 300) }, 502);
         const j = await r.json();
         const n = j.next ?? j.nextCursor ?? j.cursor?.next ?? null;
-        prox = !n ? null
-          : /^https?:/.test(n) ? n
-          : n.startsWith("/") ? API + n
+        // "next" pode vir como URL/querystring; extrai só o valor do cursor.
+        const m = n ? String(n).match(/[?&]?after=([^&]+)/) : null;
+        const cursor = m ? decodeURIComponent(m[1]) : n;
+        prox = !cursor ? null
           : API + "/v2/transactions?accountId=" + encodeURIComponent(c.id) + "&dateFrom=" + desde +
-            "&after=" + encodeURIComponent(n);
+            "&after=" + encodeURIComponent(cursor);
         const linhas = (j.results || j.data || []).map((t: any) => ({
           pluggy_id: t.id, user_id: DONO, conta_pluggy: c.id, conta_nome: c.name, conta_tipo: c.type,
           data: String(t.date).slice(0, 10), descricao: t.description, valor: t.amount,
