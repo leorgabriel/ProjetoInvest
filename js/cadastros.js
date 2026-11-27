@@ -1,6 +1,8 @@
 import {sb} from "./supabase-client.js";
 import {S} from "./estado.js";
 import {$, esc, toast, erro, sheet, fechar} from "./util.js";
+import {souDono} from "./openfinance.js";
+import {abrir} from "./nav.js";
 
 export const TABELA={cat:"categoria",conta:"conta_pagamento",pessoa:"pessoa"};
 export const ROTULO={cat:"categoria",conta:"forma de pagamento",pessoa:"pessoa"};
@@ -67,11 +69,16 @@ export async function telaCadastros(){
     '<a class="btn sec" href="painel.html" style="display:grid;place-items:center;text-decoration:none">Abrir painel</a>'+
     '<div class="mu" style="font-size:.78rem;text-align:center;margin-top:8px">'+
     'Análises e gráficos para telas grandes (computador).</div>'+
+    '<div id="boxOF"></div>'+
     '<div class="grupo"><span>Conta</span></div>'+
     '<button class="btn sec" id="bSairC">Sair da conta</button>'+
     '<div class="mu" style="font-size:.78rem;text-align:center;margin-top:14px">'+
     'Para instalar: Compartilhar e depois "Adicionar à Tela de Início".</div><div style="height:30px"></div>';
   const alvo=$("#t-cadastros");
+  souDono().then(ok=>{ const bx=$("#boxOF"); if(!ok||!bx) return;
+    bx.innerHTML='<div class="grupo"><span>Open Finance</span></div>'+
+      '<button class="btn sec" id="bOF">Abrir integração (teste)</button>';
+    $("#bOF").onclick=()=>abrir("of"); });
   alvo.querySelectorAll("[data-novo]").forEach(b=>b.onclick=()=>
     b.dataset.novo==="convite"?sheetConvite():sheetCadastro(b.dataset.novo,null));
   alvo.querySelectorAll("[data-delcv]").forEach(b=>b.onclick=async()=>{

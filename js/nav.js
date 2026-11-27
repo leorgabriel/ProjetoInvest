@@ -4,6 +4,7 @@ import {telaMes, sheetNovoLancamento} from "./mes.js";
 import {telaAno} from "./ano.js";
 import {telaGuardado} from "./guardado.js";
 import {telaCadastros} from "./cadastros.js";
+import {telaOF} from "./openfinance.js";
 
 const CARET='<svg class="caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
 
@@ -58,4 +59,5 @@ export function carregar(){
   else if(S.tela==="ano") telaAno();
   else if(S.tela==="guardado") telaGuardado();
   else if(S.tela==="cadastros") telaCadastros();
+  else if(S.tela==="of") telaOF();
 }

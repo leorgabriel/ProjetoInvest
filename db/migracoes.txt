@@ -112,3 +112,8 @@ O SQL de cada uma está registrado no painel, em Database > Migrations.
                                                (rateado/líquido, logo no saldo), v_a_receber,
                                                v_a_receber_pessoa e v_movimento_caixa. Sem valores
                                                preenchidos, saída idêntica (conferida em transação)
+54_pluggy_sandbox                        2026-11-26  sandbox Open Finance (Pluggy), isolado: tabela pluggy_transacao
+                                               (RLS forçado, só SELECT do próprio user_id; sem grants p/ anon;
+                                               escrita só pela Edge Function sync-pluggy com service role, que
+                                               aceita apenas o usuário dono). Nada lê essa tabela fora da aba
+                                               "Open Finance (teste)". Desfazer: drop table + apagar a função.
