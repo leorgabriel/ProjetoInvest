@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     for (const c of contas) {
       // v2: paginação por cursor; segue "next" (URL ou cursor) até vir nulo.
       let prox: string | null = API + "/v2/transactions?accountId=" + encodeURIComponent(c.id) +
-        "&dateFrom=" + desde + "&pageSize=500";
+        "&dateFrom=" + desde;
       for (let volta = 0; prox && volta < 200; volta++) {
         const r = await fetch(prox, { headers: H });
         if (!r.ok) return json({ erro: "transacoes Pluggy falhou (" + r.status + "): " +
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
           : /^https?:/.test(n) ? n
           : n.startsWith("/") ? API + n
           : API + "/v2/transactions?accountId=" + encodeURIComponent(c.id) + "&dateFrom=" + desde +
-            "&pageSize=500&after=" + encodeURIComponent(n);
+            "&after=" + encodeURIComponent(n);
         const linhas = (j.results || j.data || []).map((t: any) => ({
           pluggy_id: t.id, user_id: DONO, conta_pluggy: c.id, conta_nome: c.name, conta_tipo: c.type,
           data: String(t.date).slice(0, 10), descricao: t.description, valor: t.amount,
