@@ -39,12 +39,21 @@ Deno.serve(async (req) => {
     const desde = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
     let total = 0;
     for (const c of contas) {
-      for (let p = 1; ; p++) {
-        const r = await fetch(API + "/transactions?accountId=" + c.id + "&from=" + desde +
-          "&pageSize=500&page=" + p, { headers: H });
-        if (!r.ok) return json({ erro: "transacoes Pluggy falhou (" + r.status + ")" }, 502);
+      // v2: paginação por cursor; segue "next" (URL ou cursor) até vir nulo.
+      let prox: string | null = API + "/v2/transactions?accountId=" + encodeURIComponent(c.id) +
+        "&dateFrom=" + desde + "&pageSize=500";
+      for (let volta = 0; prox && volta < 200; volta++) {
+        const r = await fetch(prox, { headers: H });
+        if (!r.ok) return json({ erro: "transacoes Pluggy falhou (" + r.status + "): " +
+          (await r.text()).slice(0, 300) }, 502);
         const j = await r.json();
-        const linhas = (j.results || []).map((t: any) => ({
+        const n = j.next ?? j.nextCursor ?? j.cursor?.next ?? null;
+        prox = !n ? null
+          : /^https?:/.test(n) ? n
+          : n.startsWith("/") ? API + n
+          : API + "/v2/transactions?accountId=" + encodeURIComponent(c.id) + "&dateFrom=" + desde +
+            "&pageSize=500&after=" + encodeURIComponent(n);
+        const linhas = (j.results || j.data || []).map((t: any) => ({
           pluggy_id: t.id, user_id: DONO, conta_pluggy: c.id, conta_nome: c.name, conta_tipo: c.type,
           data: String(t.date).slice(0, 10), descricao: t.description, valor: t.amount,
           parcela_num: t.creditCardMetadata?.installmentNumber ?? null,
@@ -56,7 +65,6 @@ Deno.serve(async (req) => {
           if (error) return json({ erro: error.message }, 500);
           total += linhas.length;
         }
-        if (p >= (j.totalPages || 1)) break;
       }
     }
     return json({ ok: true, contas: contas.length, transacoes: total });
